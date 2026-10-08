@@ -14,6 +14,7 @@ kotlin {
 }
 
 dependencies {
+    testRuntimeOnly(libs.findLibrary("junit-platform-launcher").get())
     testImplementation(libs.findLibrary("junit-jupiter").get())
     testImplementation(libs.findLibrary("mockk").get())
     testImplementation(libs.findLibrary("coroutines-test").get())

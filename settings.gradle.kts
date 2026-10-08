@@ -15,5 +15,15 @@ dependencyResolutionManagement {
 
 rootProject.name = "fetchy"
 
-// Modules are included starting from T0.4
-include()
+include(":core:model")
+include(":core:ytdlp")
+include(":core:data")
+include(":core:platform")
+include(":designsystem")
+include(":feature:add")
+include(":feature:queue")
+include(":feature:history")
+include(":feature:presets")
+include(":feature:settings")
+include(":feature:tools")
+include(":app")
