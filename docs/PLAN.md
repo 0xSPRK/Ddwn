@@ -103,8 +103,8 @@
 - Commit: `T1.2: base components`
 
 ### Task T1.3: Галерея-витрина + спайк graphics-shapes
-- Files: `feature/tools` (подпакет `gallery`) или отдельный `designsystem/gallery` внутри `app` — решение: класс `GalleryScreen` в `feature/tools` с `Destination.Gallery`; спайк: `designsystem/src/main/kotlin/fetchy/designsystem/shapes/Morph.kt`
-- Do: экран, демонстрирующий каждый компонент и морфинг форм; спайк: подключить `androidx.graphics:graphics-shapes` и проверить JVM-таргет; если таргет недоступен — заменить на собственную интерполяцию `Shape` и зафиксировать это в отчёте.
+- Files: `feature/tools/src/main/kotlin/fetchy/feature/tools/gallery/GalleryScreen.kt`; спайк: `designsystem/src/main/kotlin/fetchy/designsystem/shapes/Morph.kt`
+- Do: экран `GalleryScreen` (чистый `@Composable`, БЕЗ навигации — `Destination` ещё не существует; в навигацию его подключает T8.1), демонстрирующий каждый компонент и морфинг форм; спайк: подключить `androidx.graphics:graphics-shapes` и проверить JVM-таргет; если таргет недоступен — заменить на собственную интерполяцию `Shape` и зафиксировать это в отчёте.
 - Tests: smoke-тест рендера витрины (headless) или unit-тест логики морфинга; решение о fallback — assertion на отсутствие таргета.
 - Verify: `./gradlew build`; в отчёте явный вердикт по graphics-shapes.
 - Commit: `T1.3: gallery + shapes spike`
@@ -171,7 +171,7 @@
 
 ### Task T3.4: Очередь исполнения (ядро) — Scheduler
 - Files: `core/ytdlp/src/main/kotlin/fetchy/ytdlp/DownloadScheduler.kt`, `feature/queue/.../QueueViewModel.kt` (минимум), строки EN/RU
-- Do: `DownloadScheduler` — корутина, максимум N параллельных задач (из настроек, default 2), очередь FIFO, состояния задач (queued→running→paused? нет: queued→running→done/failed/cancelled), retry с backoff (2 попытки), персист прогресса в БД; события → `Flow`; интеграция с `YtdlpProcessRunner`; отмена задачи убивает процесс.
+- Do: `DownloadScheduler` — корутина, максимум N параллельных задач (из настроек, default 2), очередь FIFO, состояния задач (queued→running→done/failed/cancelled), retry с backoff (2 попытки), персист прогресса через интерфейс `TaskStateStore`, объявленный в `core/model` и реализованный в `core/data` (чтобы `core/ytdlp` не зависел от `core/data` — правило слоёв из T0.4); события → `Flow`; интеграция с `YtdlpProcessRunner`; отмена задачи убивает процесс.
 - Tests: тесты шедулера с фейковым runner (параллелизм ≤N, retry, отмена, персист-вызовы), ≥10 тестов.
 - Verify: `./gradlew build`.
 - Commit: `T3.4: download scheduler`
@@ -197,7 +197,7 @@
 - Do: при старте задачи со статусом `running`/`queued` переводятся в `queued` (с прогрессом 0 для running, т.к. yt-dlp не возобновляет битые частичные файлы без `--continue`; `--continue` включён по умолчанию в ArgvBuilder — возобновление идёт на уровне файла), лог ошибок прошлой сессии доступен в History; UI-диалог «Возобновить N незавершённых?» с Да/Нет.
 - Tests: тест requeue-логики (in-memory DB), ≥4; тест bootstrap-обработчика с фейками.
 - Verify: `./gradlew build`.
-- Commit: `T3.x→T4.3: queue recovery` (сообщение: `T4.3: queue recovery`)
+- Commit: `T4.3: queue recovery`
 
 ## Этап 5 — экран History
 
