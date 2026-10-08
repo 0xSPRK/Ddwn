@@ -1,0 +1,45 @@
+[versions]
+kotlin = "2.4.10"
+compose-multiplatform = "1.12.0"
+material3 = "1.12.0-alpha03"
+materialkolor = "5.0.1"
+graphics-shapes = "1.1.0"
+ktor = "3.6.0"
+koin = "4.2.2"
+sqldelight = "2.3.2"
+coil = "3.6.0"
+coroutines = "1.11.0"
+jna = "5.19.1"
+mockk = "1.14.11"
+kotlinx-serialization = "1.9.0"
+junit = "5.11.4"
+turbine = "1.2.0"
+
+[libraries]
+kotlin-stdlib = { module = "org.jetbrains.kotlin:kotlin-stdlib", version.ref = "kotlin" }
+compose-multiplatform = { module = "org.jetbrains.compose.runtime:runtime", version.ref = "compose-multiplatform" }
+material3 = { module = "org.jetbrains.compose.material3:material3", version.ref = "material3" }
+materialkolor = { module = "com.materialkolor:material-kolor", version.ref = "materialkolor" }
+graphics-shapes = { module = "androidx.graphics:graphics-shapes", version.ref = "graphics-shapes" }
+# io.ktor:ktor-core не существует в Ktor 3.x (Maven Central: 0 hits); ближайший реальный артефакт client-стека (PLAN: "Ktor (client)")
+ktor-core = { module = "io.ktor:ktor-client-core", version.ref = "ktor" }
+ktor-client-core = { module = "io.ktor:ktor-client-core", version.ref = "ktor" }
+ktor-client-okhttp = { module = "io.ktor:ktor-client-okhttp", version.ref = "ktor" }
+koin-core = { module = "io.insert-koin:koin-core", version.ref = "koin" }
+koin-compose = { module = "io.insert-koin:koin-compose", version.ref = "koin" }
+sqldelight-runtime = { module = "app.cash.sqldelight:runtime", version.ref = "sqldelight" }
+sqldelight-driver-sqlite = { module = "app.cash.sqldelight:sqlite-driver", version.ref = "sqldelight" }
+sqldelight-gradle-plugin = { module = "app.cash.sqldelight:gradle-plugin", version.ref = "sqldelight" }
+coil-compose = { module = "io.coil-kt.coil3:coil-compose", version.ref = "coil" }
+coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "coroutines" }
+coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "coroutines" }
+jna = { module = "net.java.dev.jna:jna", version.ref = "jna" }
+mockk = { module = "io.mockk:mockk", version.ref = "mockk" }
+junit-jupiter = { module = "org.junit.jupiter:junit-jupiter", version.ref = "junit" }
+turbine = { module = "app.cash.turbine:turbine", version.ref = "turbine" }
+kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinx-serialization" }
+
+[plugins]
+kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
+kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
+compose = { id = "org.jetbrains.compose", version.ref = "compose-multiplatform" }
