@@ -4,6 +4,7 @@ plugins {
 }
 
 dependencies {
+    implementation(libs.graphics.shapes)
     testImplementation(libs.compose.ui.test)
 }
 
