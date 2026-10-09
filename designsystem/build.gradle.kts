@@ -4,4 +4,10 @@ plugins {
 }
 
 dependencies {
+    testImplementation(libs.compose.ui.test)
+}
+
+tasks.test {
+    systemProperty("java.awt.headless", "true")
+    systemProperty("skiko.renderApi", "SOFTWARE")
 }
