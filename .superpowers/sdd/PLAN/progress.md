@@ -32,3 +32,6 @@
 - Task 1.2: complete (commits a735a72..cea9759, review clean; 2 medium: Linux CI UI-test headless verification (deferred to first CI run), report vs code — cards overloads; 5 minor: literal dims claim, variant coverage, OutlinedButton loading asymmetry, unused import, runComposeUiTest v2 deprecation)
 - Task 1.3: complete (commits cea9759..fafdcf0, review clean; 4 low: per-frame cubics recomputation, Morph bounds edge, weak differ assertion, gallery test fragility; 2 info: dependency commitment, icons missing)
 - Task 1.4: complete (commits fafdcf0..03ed805, review clean; 2 medium: slide directions ignore pop, fadeThrough timing not strictly M3 fade-through; 3 low: Theme integration unverified, DurationTest gap, NavigationTransition coverage gaps)
+
+- Task 2.1: complete (commits 03ed805..2389183, review clean; 2 concerns: package naming vs skeleton, provisional models)
+- Task 2.1: complete (commits 03ed805..2389183, review clean; 2 concerns: package naming vs skeleton, provisional models)
