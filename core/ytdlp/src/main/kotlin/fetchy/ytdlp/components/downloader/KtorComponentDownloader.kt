@@ -37,15 +37,14 @@ class KtorComponentDownloader(
         requireHttps(url, opts)
         FilesExt.ensureParent(dest)
         val part: Path = dest.resolveSibling(dest.fileName.toString() + PART_SUFFIX)
-        val existingSize: Long = if (opts.rangeResume) (FilesExt.sizeBytes(part) ?: 0L) else 0L
         val attempts: Int = (opts.maxRetries + 1).coerceAtLeast(1)
         var attempt: Int = 0
         var last: ComponentError? = null
-        while (attempt < attempts) {
+        var downloaded: Boolean = false
+        while (!downloaded && attempt < attempts) {
             try {
-                executeDownload(clientFor(opts), url, part, existingSize, opts) { progress -> emit(progress) }
-                FilesExt.moveAtomic(part, dest)
-                return@flow
+                executeDownload(clientFor(opts), url, part, opts) { progress -> emit(progress) }
+                downloaded = true
             } catch (e: CancellationException) {
                 throw e
             } catch (e: ComponentError.InsecureRedirect) {
@@ -59,11 +58,17 @@ class KtorComponentDownloader(
             } catch (e: Exception) {
                 last = ComponentError.DownloadFailed(e.message ?: "download failed")
             }
-            attempt++
-            if (attempt >= attempts) break
-            delay(opts.retryBackoffMs * (1L shl (attempt - 1)))
+            if (!downloaded) {
+                attempt++
+                if (attempt < attempts) delay(opts.retryBackoffMs * (1L shl (attempt - 1)))
+            }
         }
-        throw last ?: ComponentError.DownloadFailed("download failed")
+        if (!downloaded) throw last ?: ComponentError.DownloadFailed("download failed")
+        try {
+            FilesExt.moveAtomic(part, dest)
+        } catch (e: IOException) {
+            throw ComponentError.DownloadFailed("Cannot finalize download: ${e.message}")
+        }
     }
 
     override suspend fun get(url: String, headers: Map<String, String>): HttpTextResponse {
@@ -114,15 +119,16 @@ class KtorComponentDownloader(
         httpClient: HttpClient,
         initialUrl: String,
         part: Path,
-        existingSize: Long,
         opts: DownloadOpts,
         emitProgress: suspend (DownloadProgress) -> Unit,
     ) {
         try {
             var current: String = initialUrl
             var redirects: Int = 0
+            var restarted: Boolean = false
             while (true) {
                 requireHttps(current, opts)
+                val existingSize: Long = if (opts.rangeResume) (FilesExt.sizeBytes(part) ?: 0L) else 0L
                 val step: Step =
                     httpClient.prepareGet(current) {
                         if (existingSize > 0) header(HttpHeaders.Range, "bytes=$existingSize-")
@@ -135,13 +141,19 @@ class KtorComponentDownloader(
                     }.execute { response ->
                         val status: Int = response.status.value
                         val location: String? = response.headers[HttpHeaders.Location]
-                        if (status in 300..399 && location != null) {
-                            Step.Redirect(resolveLocation(current, location))
-                        } else if (status == 200 || status == 206) {
-                            streamBody(response, part, existingSize, status, emitProgress)
-                            Step.Done
-                        } else {
-                            throw ComponentError.HttpError(status, current)
+                        when {
+                            status in 300..399 && location != null ->
+                                Step.Redirect(resolveLocation(current, location))
+
+                            status == 416 && existingSize > 0 && !restarted ->
+                                Step.Restart
+
+                            status == 200 || status == 206 -> {
+                                streamBody(response, part, existingSize, status, emitProgress)
+                                Step.Done
+                            }
+
+                            else -> throw ComponentError.HttpError(status, current)
                         }
                     }
                 when (step) {
@@ -152,6 +164,12 @@ class KtorComponentDownloader(
                             throw ComponentError.DownloadFailed("too many redirects")
                         }
                         current = step.location
+                    }
+
+                    is Step.Restart -> {
+                        FilesExt.deleteIfExists(part)
+                        restarted = true
+                        redirects = 0
                     }
                 }
             }
@@ -234,6 +252,8 @@ class KtorComponentDownloader(
 
     private sealed interface Step {
         data object Done : Step
+
+        data object Restart : Step
 
         data class Redirect(val location: String) : Step
     }

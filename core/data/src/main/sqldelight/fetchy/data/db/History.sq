@@ -1,0 +1,47 @@
+CREATE TABLE history (
+    id TEXT NOT NULL PRIMARY KEY,
+    url TEXT NOT NULL,
+    title TEXT,
+    format_args_json TEXT NOT NULL DEFAULT '[]',
+    preset_id TEXT,
+    status TEXT NOT NULL,
+    progress REAL NOT NULL DEFAULT 0,
+    created_at INTEGER NOT NULL,
+    finished_at INTEGER,
+    error_class TEXT,
+    log_path TEXT,
+    file_path TEXT,
+    duration_ms INTEGER
+);
+
+insert:
+INSERT INTO history(id, url, title, format_args_json, preset_id, status, progress, created_at, finished_at, error_class, log_path, file_path, duration_ms)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+
+selectById:
+SELECT *
+FROM history
+WHERE id = ?;
+
+selectAll:
+SELECT *
+FROM history
+ORDER BY created_at DESC;
+
+search:
+SELECT *
+FROM history
+WHERE (title LIKE '%' || ? || '%' OR url LIKE '%' || ? || '%')
+ORDER BY created_at DESC
+LIMIT ? OFFSET ?;
+
+countAll:
+SELECT count(*)
+FROM history;
+
+deleteById:
+DELETE FROM history
+WHERE id = ?;
+
+deleteAll:
+DELETE FROM history;

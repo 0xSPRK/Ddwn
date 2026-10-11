@@ -3,6 +3,7 @@ package fetchy.ytdlp.installer
 import fetchy.ytdlp.components.ComponentError
 import fetchy.ytdlp.util.FilesExt
 import fetchy.ytdlp.util.Platform
+import kotlinx.coroutines.CancellationException
 import java.io.IOException
 import java.nio.file.Files
 import java.nio.file.Path
@@ -50,19 +51,26 @@ class AtomicInstaller(
         val ok: Boolean =
             try {
                 postCheck()
+            } catch (e: CancellationException) {
+                rollback(target, backup, hadPrevious)
+                throw e
             } catch (_: Exception) {
                 false
             }
 
         if (!ok) {
-            FilesExt.deleteIfExists(target)
-            if (hadPrevious && Files.exists(backup)) {
-                runCatching { FilesExt.moveAtomic(backup, target) }
-            }
+            rollback(target, backup, hadPrevious)
             return AtomicInstallResult.RolledBack("Post-check failed for ${target.fileName}")
         }
 
         return AtomicInstallResult.Installed
+    }
+
+    private fun rollback(target: Path, backup: Path, hadPrevious: Boolean) {
+        FilesExt.deleteIfExists(target)
+        if (hadPrevious && Files.exists(backup)) {
+            runCatching { FilesExt.moveAtomic(backup, target) }
+        }
     }
 
     companion object {

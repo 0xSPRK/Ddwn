@@ -1,0 +1,22 @@
+CREATE TABLE setting (
+    setting_key TEXT NOT NULL PRIMARY KEY,
+    value TEXT NOT NULL
+);
+
+insert:
+INSERT OR REPLACE INTO setting(setting_key, value)
+VALUES (?, ?);
+
+selectByKey:
+SELECT *
+FROM setting
+WHERE setting_key = ?;
+
+selectAll:
+SELECT *
+FROM setting
+ORDER BY setting_key ASC;
+
+deleteByKey:
+DELETE FROM setting
+WHERE setting_key = ?;

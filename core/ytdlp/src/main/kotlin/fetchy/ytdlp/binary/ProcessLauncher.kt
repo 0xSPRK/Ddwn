@@ -38,24 +38,28 @@ class DefaultProcessLauncher : ProcessLauncher {
                 throw ProcessStartException(e.message ?: "Process failed to start", e)
             }
 
-        return coroutineScope {
-            val stdout: kotlinx.coroutines.Deferred<ByteArray> =
-                async(Dispatchers.IO) { process.inputStream.use { it.readBytes() } }
-            val stderr: kotlinx.coroutines.Deferred<ByteArray> =
-                async(Dispatchers.IO) { process.errorStream.use { it.readBytes() } }
-            val finished: Boolean =
-                withContext(Dispatchers.IO) { process.waitFor(timeoutMillis, TimeUnit.MILLISECONDS) }
-            if (!finished) {
-                process.destroyForcibly()
-                stdout.cancel()
-                stderr.cancel()
-                throw ProcessTimeoutException("Process timed out after ${timeoutMillis}ms")
+        return try {
+            coroutineScope {
+                val stdout: kotlinx.coroutines.Deferred<ByteArray> =
+                    async(Dispatchers.IO) { process.inputStream.use { it.readBytes() } }
+                val stderr: kotlinx.coroutines.Deferred<ByteArray> =
+                    async(Dispatchers.IO) { process.errorStream.use { it.readBytes() } }
+                val finished: Boolean =
+                    withContext(Dispatchers.IO) { process.waitFor(timeoutMillis, TimeUnit.MILLISECONDS) }
+                if (!finished) {
+                    process.destroyForcibly()
+                    stdout.cancel()
+                    stderr.cancel()
+                    throw ProcessTimeoutException("Process timed out after ${timeoutMillis}ms")
+                }
+                ProcessOutput(
+                    exitCode = process.exitValue(),
+                    stdout = String(stdout.await(), StandardCharsets.UTF_8),
+                    stderr = String(stderr.await(), StandardCharsets.UTF_8),
+                )
             }
-            ProcessOutput(
-                exitCode = process.exitValue(),
-                stdout = String(stdout.await(), StandardCharsets.UTF_8),
-                stderr = String(stderr.await(), StandardCharsets.UTF_8),
-            )
+        } finally {
+            if (process.isAlive) process.destroyForcibly()
         }
     }
 }

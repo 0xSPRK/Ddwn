@@ -168,4 +168,27 @@ class KtorComponentDownloaderTest {
         assertInstanceOf(ComponentError.DownloadFailed::class.java, thrown)
         assertTrue(!Files.exists(dest))
     }
+
+    @Test
+    fun failsWhenRedirectLimitExceeded() = runTest {
+        val engine =
+            MockEngine {
+                respond(
+                    "",
+                    HttpStatusCode.Found,
+                    headersOf(HttpHeaders.Location, "https://example.com/next"),
+                )
+            }
+        val dest = root.resolve("out.bin")
+
+        val thrown =
+            expectThrow {
+                downloader(engine)
+                    .download("https://example.com/a.bin", dest, DownloadOpts(maxRetries = 0, maxRedirects = 2))
+                    .toList()
+            }
+
+        assertInstanceOf(ComponentError.DownloadFailed::class.java, thrown)
+        assertTrue(!Files.exists(dest))
+    }
 }

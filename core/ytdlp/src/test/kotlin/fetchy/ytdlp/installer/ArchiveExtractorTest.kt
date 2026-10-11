@@ -107,4 +107,22 @@ class ArchiveExtractorTest {
             ArchiveExtractor().extract(file, root.resolve("out"))
         }
     }
+
+    @Test
+    fun flagsSymlinkAndHardlinkEntriesInTarListing() {
+        val extractor = ArchiveExtractor()
+        val symlink = "lrwxrwxrwx user/group 0 2026-01-01 00:00 link -> /etc/passwd"
+        val hardlink = "hrw-r--r-- user/group 0 2026-01-01 00:00 hard link to target"
+        assertTrue(extractor.hasUnsafeLinkEntries(symlink))
+        assertTrue(extractor.hasUnsafeLinkEntries(hardlink))
+    }
+
+    @Test
+    fun allowsRegularTarEntries() {
+        val extractor = ArchiveExtractor()
+        val regular = "-rw-r--r-- user/group 1234 2026-01-01 00:00 dir/ffmpeg"
+        val directory = "drwxr-xr-x user/group 0 2026-01-01 00:00 dir/"
+        assertTrue(!extractor.hasUnsafeLinkEntries(regular))
+        assertTrue(!extractor.hasUnsafeLinkEntries(directory))
+    }
 }
