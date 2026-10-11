@@ -20,3 +20,7 @@ Thumbs.db
 .repowise/
 local.properties
 *.log
+
+# Plans (SDD plan workspace, briefs, ledger)
+.superpowers/sdd/PLAN/
+docs/PLAN.md
