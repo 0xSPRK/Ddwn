@@ -14,6 +14,7 @@ import fetchy.ytdlp.util.AppPaths
 import fetchy.ytdlp.util.FilesExt
 import fetchy.ytdlp.util.Platform
 import fetchy.ytdlp.util.SingleFlight
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.collect
 import java.nio.file.Files
 import java.nio.file.Path
@@ -180,6 +181,8 @@ class ComponentsManager(
                     postCheckTimeoutMillis,
                 )
             output.exitCode == 0
+        } catch (e: CancellationException) {
+            throw e
         } catch (_: Exception) {
             false
         }

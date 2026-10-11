@@ -68,6 +68,9 @@ class ArchiveExtractor {
         for (entry in listing) {
             safeTarget(root, entry)
         }
+        if (hasUnsafeLinkEntries(runTar(listOf("-tvf", archive.toString())))) {
+            throw ComponentError.UnsafeArchiveEntry("Archive contains link entries")
+        }
         val code: Int = runTarProcess(listOf("-xf", archive.toString(), "-C", destDir.toString()))
         if (code != 0) {
             throw ComponentError.CorruptArchive("Failed to extract tar.xz archive")
@@ -120,6 +123,17 @@ class ArchiveExtractor {
         errThread.join()
         return process.exitValue()
     }
+
+    internal fun hasUnsafeLinkEntries(verboseListing: String): Boolean =
+        verboseListing.lineSequence().any { line ->
+            val trimmed: String = line.trimStart()
+            if (trimmed.isEmpty()) {
+                false
+            } else {
+                val type: Char = trimmed[0]
+                type == 'l' || type == 'h' || trimmed.contains(" -> ")
+            }
+        }
 
     private fun safeTarget(root: Path, entryName: String): Path {
         if (entryName.isBlank()) {
