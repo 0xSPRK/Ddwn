@@ -1,0 +1,29 @@
+CREATE TABLE preset (
+    id TEXT NOT NULL PRIMARY KEY,
+    name TEXT NOT NULL,
+    args_json TEXT NOT NULL,
+    created_at INTEGER NOT NULL
+);
+
+insert:
+INSERT INTO preset(id, name, args_json, created_at)
+VALUES (?, ?, ?, ?);
+
+selectById:
+SELECT *
+FROM preset
+WHERE id = ?;
+
+selectAll:
+SELECT *
+FROM preset
+ORDER BY name ASC;
+
+update:
+UPDATE preset
+SET name = ?, args_json = ?
+WHERE id = ?;
+
+deleteById:
+DELETE FROM preset
+WHERE id = ?;

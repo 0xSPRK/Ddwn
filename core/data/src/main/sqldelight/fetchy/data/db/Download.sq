@@ -1,0 +1,52 @@
+CREATE TABLE download (
+    id TEXT NOT NULL PRIMARY KEY,
+    url TEXT NOT NULL,
+    title TEXT,
+    format_args_json TEXT NOT NULL DEFAULT '[]',
+    preset_id TEXT,
+    status TEXT NOT NULL,
+    progress REAL NOT NULL DEFAULT 0,
+    created_at INTEGER NOT NULL,
+    finished_at INTEGER,
+    error_class TEXT,
+    log_path TEXT
+);
+
+insert:
+INSERT INTO download(id, url, title, format_args_json, preset_id, status, progress, created_at, finished_at, error_class, log_path)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+
+selectById:
+SELECT *
+FROM download
+WHERE id = ?;
+
+selectAll:
+SELECT *
+FROM download
+ORDER BY created_at ASC;
+
+selectActive:
+SELECT *
+FROM download
+WHERE status IN ('QUEUED', 'DOWNLOADING')
+ORDER BY created_at ASC;
+
+countActive:
+SELECT count(*)
+FROM download
+WHERE status IN ('QUEUED', 'DOWNLOADING');
+
+updateStatus:
+UPDATE download
+SET status = ?, progress = ?, finished_at = ?, error_class = ?
+WHERE id = ?;
+
+updateProgress:
+UPDATE download
+SET progress = ?
+WHERE id = ?;
+
+deleteById:
+DELETE FROM download
+WHERE id = ?;
