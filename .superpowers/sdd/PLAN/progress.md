@@ -34,4 +34,4 @@
 - Task 1.4: complete (commits fafdcf0..03ed805, review clean; 2 medium: slide directions ignore pop, fadeThrough timing not strictly M3 fade-through; 3 low: Theme integration unverified, DurationTest gap, NavigationTransition coverage gaps)
 
 - Task 2.1: complete (commits 03ed805..2389183, review clean; 2 concerns: package naming vs skeleton, provisional models)
-- Task 2.1: complete (commits 03ed805..2389183, review clean; 2 concerns: package naming vs skeleton, provisional models)
+- Task 2.2: implemented (64 tests green, full `./gradlew build` green, awaiting review; scope: BinaryManager/ComponentsManager/Downloader/Integrity/Installer/UpdateCache under fetchy.ytdlp; DECISIONS D21–D25; placeholder YtDlp.kt removed; 3 compile fixes: contentLength import, IntegrityResult.sha256, UpdateCheckCache JsonPrimitive/brace)
