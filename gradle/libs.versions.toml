@@ -22,6 +22,7 @@ kotlin-stdlib = { module = "org.jetbrains.kotlin:kotlin-stdlib", version.ref = "
 compose-multiplatform = { module = "org.jetbrains.compose.runtime:runtime", version.ref = "compose-multiplatform" }
 material3 = { module = "org.jetbrains.compose.material3:material3", version.ref = "material3" }
 compose-ui-test = { module = "org.jetbrains.compose.ui:ui-test", version.ref = "compose-multiplatform" }
+compose-components-resources = { module = "org.jetbrains.compose.components:components-resources", version.ref = "compose-multiplatform" }
 materialkolor = { module = "com.materialkolor:material-kolor", version.ref = "materialkolor" }
 graphics-shapes = { module = "androidx.graphics:graphics-shapes", version.ref = "graphics-shapes" }
 # io.ktor:ktor-core не существует в Ktor 3.x (Maven Central: 0 hits); ближайший реальный артефакт client-стека (PLAN: "Ktor (client)")

@@ -1,3 +1,6 @@
 package fetchy.feature.add
 
-object AddModule
+import org.koin.core.module.Module
+import org.koin.dsl.module
+
+val addModule: Module = module { }
