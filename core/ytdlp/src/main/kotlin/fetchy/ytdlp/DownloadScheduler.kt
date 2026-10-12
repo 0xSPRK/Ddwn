@@ -6,9 +6,11 @@ import fetchy.model.TaskStateStore
 import fetchy.model.TaskStatus
 import fetchy.model.YtdlpError
 import java.util.concurrent.atomic.AtomicBoolean
+import kotlin.coroutines.coroutineContext
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.NonCancellable
@@ -17,6 +19,7 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
@@ -68,11 +71,17 @@ class DownloadScheduler(
         }
     }
 
-    fun submit(task: DownloadTask) {
-        synchronized(lock) { queuedIds.add(task.id) }
+    fun submit(task: DownloadTask): Boolean {
+        if (closed.get()) return false
+        synchronized(lock) {
+            if (task.id in queuedIds || task.id in runningJobs) return false
+            queuedIds.add(task.id)
+        }
         if (!queue.trySend(task).isSuccess) {
             synchronized(lock) { queuedIds.remove(task.id) }
+            return false
         }
+        return true
     }
 
     fun cancel(id: String) {
@@ -89,59 +98,68 @@ class DownloadScheduler(
     }
 
     override fun close() {
-        closed.set(true)
+        if (!closed.compareAndSet(false, true)) return
+        queue.close()
         scope.cancel()
     }
 
     private suspend fun worker() {
         for (task in queue) {
-            val proceed: Boolean =
+            val began: AtomicBoolean = AtomicBoolean(false)
+            var cancelQueued: Boolean = false
+            val job: Job? =
                 synchronized(lock) {
-                    queuedIds.remove(task.id)
-                    !cancelledIds.remove(task.id)
+                    if (cancelledIds.remove(task.id)) {
+                        queuedIds.remove(task.id)
+                        cancelQueued = true
+                        null
+                    } else if (queuedIds.remove(task.id)) {
+                        val launched: Job =
+                            scope.launch(start = CoroutineStart.LAZY) {
+                                began.set(true)
+                                execute(task)
+                            }
+                        runningJobs[task.id] = launched
+                        launched
+                    } else {
+                        null
+                    }
                 }
-            if (!proceed) {
+
+            if (cancelQueued) {
                 recordCancelled(task)
                 continue
             }
+            if (job == null) continue
 
-            val job: Job = scope.launch { execute(task) }
-            val cancelNow: Boolean =
-                synchronized(lock) {
-                    if (cancelledIds.remove(task.id)) {
-                        true
-                    } else {
-                        runningJobs[task.id] = job
-                        false
-                    }
-                }
-            if (cancelNow) job.cancel()
+            job.start()
             job.join()
+            val cancelledBeforeRun: Boolean = job.isCancelled && !began.get()
             synchronized(lock) { runningJobs.remove(task.id) }
+            if (cancelledBeforeRun) recordCancelled(task)
         }
     }
 
     private suspend fun execute(task: DownloadTask) {
-        stateStore.markDownloading(task.id)
-        eventsFlow.tryEmit(SchedulerEvent.Started(task.id))
-
         var lastProgress: Double = task.progress
         var attempt: Int = 0
         try {
-            while (attempt < maxAttempts) {
+            stateStore.markDownloading(task.id)
+            eventsFlow.tryEmit(SchedulerEvent.Started(task.id))
+
+            val attempts: Int = maxAttempts.coerceAtLeast(1)
+            while (attempt < attempts) {
                 attempt++
                 val command: List<String> = commandBuilder.build(task)
                 if (command.isEmpty()) {
-                    stateStore.markFailed(task.id, lastProgress, ErrorClass.BINARY_MISSING, clock())
-                    eventsFlow.tryEmit(
-                        SchedulerEvent.Finished(task.id, TaskStatus.FAILED, ErrorClass.BINARY_MISSING),
-                    )
+                    fail(task.id, lastProgress, ErrorClass.BINARY_MISSING)
                     return
                 }
 
                 var failure: YtdlpError? = null
                 var completed: Boolean = false
                 runner.run(command).collect { event ->
+                    coroutineContext.ensureActive()
                     when (event) {
                         is ProgressEvent.Progress -> {
                             val fraction: Double = event.info.fraction ?: lastProgress
@@ -181,11 +199,8 @@ class DownloadScheduler(
                             errorClass = ErrorClass.UNKNOWN,
                             message = "download ended unexpectedly",
                         )
-                if (attempt >= maxAttempts) {
-                    stateStore.markFailed(task.id, lastProgress, error.errorClass, clock())
-                    eventsFlow.tryEmit(
-                        SchedulerEvent.Finished(task.id, TaskStatus.FAILED, error.errorClass),
-                    )
+                if (attempt >= attempts || !isRetryable(error.errorClass)) {
+                    fail(task.id, lastProgress, error.errorClass)
                     return
                 }
                 delay(backoffMillis)
@@ -196,7 +211,19 @@ class DownloadScheduler(
                 eventsFlow.tryEmit(SchedulerEvent.Finished(task.id, TaskStatus.CANCELLED, null))
             }
             throw cancellation
+        } catch (exception: Exception) {
+            if (!closed.get()) {
+                withContext(NonCancellable) {
+                    stateStore.markFailed(task.id, lastProgress, ErrorClass.UNKNOWN, clock())
+                }
+                eventsFlow.tryEmit(SchedulerEvent.Finished(task.id, TaskStatus.FAILED, ErrorClass.UNKNOWN))
+            }
         }
+    }
+
+    private suspend fun fail(id: String, progress: Double, errorClass: ErrorClass?) {
+        stateStore.markFailed(id, progress, errorClass, clock())
+        eventsFlow.tryEmit(SchedulerEvent.Finished(id, TaskStatus.FAILED, errorClass))
     }
 
     private suspend fun recordCancelled(task: DownloadTask) {
@@ -207,5 +234,18 @@ class DownloadScheduler(
     companion object {
         private const val EVENT_BUFFER: Int = 64
         private const val COMPLETED_PROGRESS: Double = 1.0
+
+        private val NON_RETRYABLE: Set<ErrorClass> =
+            setOf(
+                ErrorClass.NOT_FOUND,
+                ErrorClass.AUTH_REQUIRED,
+                ErrorClass.GEO_BLOCKED,
+                ErrorClass.DRM_PROTECTED,
+                ErrorClass.FFMPEG_MISSING,
+                ErrorClass.NO_SPACE,
+                ErrorClass.BINARY_MISSING,
+            )
+
+        private fun isRetryable(errorClass: ErrorClass?): Boolean = errorClass !in NON_RETRYABLE
     }
 }

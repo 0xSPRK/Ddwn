@@ -146,7 +146,7 @@ class DownloadSchedulerTest {
     fun `exhausted retries mark failed with error class`() = runTest {
         val fixture = Fixture(this)
         every { fixture.runner.run(any()) } returns
-            flowOf(ProgressEvent.Failed(YtdlpError(ErrorClass.GEO_BLOCKED, "blocked")))
+            flowOf(ProgressEvent.Failed(YtdlpError(ErrorClass.NETWORK, "reset")))
         val scheduler = fixture.scheduler(maxAttempts = 2)
 
         scheduler.start()
@@ -154,8 +154,83 @@ class DownloadSchedulerTest {
         advanceUntilIdle()
 
         assertEquals(1, fixture.store.failed.size)
-        assertEquals(ErrorClass.GEO_BLOCKED, fixture.store.failed.single().errorClass)
+        assertEquals(ErrorClass.NETWORK, fixture.store.failed.single().errorClass)
         verify(exactly = 2) { fixture.runner.run(any()) }
+        scheduler.close()
+        advanceUntilIdle()
+    }
+
+    @Test
+    fun `non retryable failure is not retried`() = runTest {
+        val fixture = Fixture(this)
+        every { fixture.runner.run(any()) } returns
+            flowOf(ProgressEvent.Failed(YtdlpError(ErrorClass.DRM_PROTECTED, "drm")))
+        val scheduler = fixture.scheduler(maxAttempts = 2)
+
+        scheduler.start()
+        scheduler.submit(task("a"))
+        advanceUntilIdle()
+
+        assertEquals(ErrorClass.DRM_PROTECTED, fixture.store.failed.single().errorClass)
+        verify(exactly = 1) { fixture.runner.run(any()) }
+        scheduler.close()
+        advanceUntilIdle()
+    }
+
+    @Test
+    fun `exception from runner marks failed and worker keeps processing`() = runTest {
+        val fixture = Fixture(this)
+        var calls = 0
+        every { fixture.runner.run(any()) } answers {
+            calls++
+            if (calls == 1) throw RuntimeException("boom") else flowOf(ProgressEvent.Completed(0))
+        }
+        val scheduler = fixture.scheduler(maxParallel = 1)
+
+        scheduler.start()
+        scheduler.submit(task("a"))
+        scheduler.submit(task("b"))
+        advanceUntilIdle()
+
+        assertEquals("a", fixture.store.failed.single().id)
+        assertEquals(ErrorClass.UNKNOWN, fixture.store.failed.single().errorClass)
+        assertEquals("b", fixture.store.completed.single().id)
+        scheduler.close()
+        advanceUntilIdle()
+    }
+
+    @Test
+    fun `submit after close is rejected`() = runTest {
+        val fixture = Fixture(this)
+        every { fixture.runner.run(any()) } returns flowOf(ProgressEvent.Completed(0))
+        val scheduler = fixture.scheduler()
+
+        scheduler.start()
+        scheduler.close()
+
+        assertFalse(scheduler.submit(task("a")))
+        advanceUntilIdle()
+        verify(exactly = 0) { fixture.runner.run(any()) }
+    }
+
+    @Test
+    fun `duplicate active submit is rejected`() = runTest {
+        val fixture = Fixture(this)
+        val gate = CompletableDeferred<Unit>()
+        every { fixture.runner.run(any()) } returns
+            flow {
+                gate.await()
+                emit(ProgressEvent.Completed(0))
+            }
+        val scheduler = fixture.scheduler(maxParallel = 2)
+
+        scheduler.start()
+        assertTrue(scheduler.submit(task("a")))
+        assertFalse(scheduler.submit(task("a")))
+        gate.complete(Unit)
+        advanceUntilIdle()
+
+        verify(exactly = 1) { fixture.runner.run(any()) }
         scheduler.close()
         advanceUntilIdle()
     }
@@ -358,10 +433,15 @@ class DownloadSchedulerTest {
     @Test
     fun `close cancels running task without recording cancelled`() = runTest {
         val fixture = Fixture(this)
+        val flowCancelled = AtomicBoolean(false)
         every { fixture.runner.run(any()) } returns
             flow {
-                emit(ProgressEvent.Progress(progress(0.5)))
-                awaitCancellation()
+                try {
+                    emit(ProgressEvent.Progress(progress(0.5)))
+                    awaitCancellation()
+                } finally {
+                    flowCancelled.set(true)
+                }
             }
         val scheduler = fixture.scheduler(maxParallel = 1)
 
@@ -372,6 +452,7 @@ class DownloadSchedulerTest {
         scheduler.close()
         advanceUntilIdle()
 
+        assertTrue(flowCancelled.get())
         assertTrue(fixture.store.cancelled.isEmpty())
         assertTrue(fixture.store.failed.isEmpty())
     }

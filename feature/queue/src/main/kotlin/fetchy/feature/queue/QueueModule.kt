@@ -24,5 +24,7 @@ val queueModule: Module = module {
         it?.close()
     }
 
-    single { QueueViewModel(get(), get()) }
+    single { QueueViewModel(get(), get()) } onClose {
+        it?.close()
+    }
 }
