@@ -3,9 +3,6 @@ package fetchy.feature.add
 import fetchy.model.DownloadTask
 import fetchy.model.ErrorClass
 import fetchy.model.TaskStatus
-import fetchy.ytdlp.ArgvBuilder
-import fetchy.ytdlp.YtDlpInvocation
-import fetchy.ytdlp.YtDlpOptions
 import java.net.URI
 import java.util.UUID
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -23,28 +20,34 @@ enum class AddPhase {
     ERROR,
 }
 
-enum class DownloadFormat(val options: YtDlpOptions) {
-    BEST(YtDlpOptions()),
+enum class DownloadFormat(val formatArgs: List<String>) {
+    BEST(emptyList()),
     BEST_1080P(
-        YtDlpOptions(
-            formatSelector = "bestvideo[height<=1080]+bestaudio/best[height<=1080]",
-            mergeOutputFormat = "mp4",
+        listOf(
+            "-f",
+            "bestvideo[height<=1080]+bestaudio/best[height<=1080]",
+            "--merge-output-format",
+            "mp4",
         ),
     ),
     BEST_720P(
-        YtDlpOptions(
-            formatSelector = "bestvideo[height<=720]+bestaudio/best[height<=720]",
-            mergeOutputFormat = "mp4",
+        listOf(
+            "-f",
+            "bestvideo[height<=720]+bestaudio/best[height<=720]",
+            "--merge-output-format",
+            "mp4",
         ),
     ),
     BEST_480P(
-        YtDlpOptions(
-            formatSelector = "bestvideo[height<=480]+bestaudio/best[height<=480]",
-            mergeOutputFormat = "mp4",
+        listOf(
+            "-f",
+            "bestvideo[height<=480]+bestaudio/best[height<=480]",
+            "--merge-output-format",
+            "mp4",
         ),
     ),
-    AUDIO_MP3(YtDlpOptions(extractAudio = true, audioFormat = "mp3")),
-    AUDIO_M4A(YtDlpOptions(extractAudio = true, audioFormat = "m4a")),
+    AUDIO_MP3(listOf("-x", "--audio-format", "mp3")),
+    AUDIO_M4A(listOf("-x", "--audio-format", "m4a")),
 }
 
 sealed interface AddError {
@@ -74,7 +77,6 @@ fun interface DownloadCreator {
 class AddViewModel(
     private val creator: DownloadCreator,
     private val previewService: UrlPreviewService,
-    private val argvBuilder: ArgvBuilder = ArgvBuilder(),
     private val clock: () -> Long = System::currentTimeMillis,
     private val idGenerator: () -> String = { UUID.randomUUID().toString() },
 ) {
@@ -107,24 +109,29 @@ class AddViewModel(
         _state.update { it.copy(phase = AddPhase.PARSING, error = null, preview = null) }
 
         when (val result: PreviewResult = previewService.preview(url)) {
-            is PreviewResult.Success ->
-                _state.update { it.copy(phase = AddPhase.READY, preview = result.preview, error = null) }
+            is PreviewResult.Success -> _state.update { current ->
+                if (current.url.trim() != url) current
+                else current.copy(phase = AddPhase.READY, preview = result.preview, error = null)
+            }
 
-            is PreviewResult.Failure ->
-                _state.update {
-                    it.copy(
+            is PreviewResult.Failure -> _state.update { current ->
+                if (current.url.trim() != url) {
+                    current
+                } else {
+                    current.copy(
                         phase = AddPhase.ERROR,
                         error = AddError.Classified(result.errorClass, result.message),
                         preview = null,
                     )
                 }
+            }
         }
     }
 
     suspend fun download(): String? {
         val current: AddUiState = _state.value
         val url: String = current.url.trim()
-        if (current.phase != AddPhase.READY || !isValidHttpUrl(url)) return null
+        if (current.phase != AddPhase.READY || current.isCreating || !isValidHttpUrl(url)) return null
 
         _state.update { it.copy(isCreating = true) }
 
@@ -137,16 +144,16 @@ class AddViewModel(
             status = TaskStatus.QUEUED,
             createdAt = clock(),
         )
-        creator.create(task)
-
-        _state.update { it.copy(isCreating = false) }
+        try {
+            creator.create(task)
+        } finally {
+            _state.update { it.copy(isCreating = false) }
+        }
         return id
     }
 
-    private fun formatArgsJson(format: DownloadFormat): String {
-        val built = argvBuilder.build(YtDlpInvocation(urls = emptyList(), options = format.options))
-        return Json.encodeToString(ListSerializer(String.serializer()), built.argv)
-    }
+    private fun formatArgsJson(format: DownloadFormat): String =
+        Json.encodeToString(ListSerializer(String.serializer()), format.formatArgs)
 
     private fun isValidHttpUrl(value: String): Boolean {
         val uri: URI = runCatching { URI(value) }.getOrNull() ?: return false

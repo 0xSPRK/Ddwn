@@ -10,6 +10,7 @@ import fetchy.ytdlp.binary.BinarySource
 import fetchy.ytdlp.binary.BinaryStatus
 import fetchy.ytdlp.components.ComponentId
 import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import java.nio.file.Path
@@ -52,7 +53,7 @@ class DefaultUrlPreviewServiceTest {
         coEvery { binaryManager.resolve(ComponentId.YT_DLP, any()) } returns info(Path.of("/bin/yt-dlp"))
         coEvery { binaryManager.resolve(ComponentId.FFPROBE, any()) } returns info(Path.of("/bin/ffprobe"))
         every { runner.run(any()) } returnsMany listOf(
-            flowOf(ProgressEvent.Failed(YtdlpError(ErrorClass.GEO_BLOCKED, "geo"))),
+            flowOf(ProgressEvent.Failed(YtdlpError(ErrorClass.UNKNOWN, "no extractor"))),
             flowOf(ProgressEvent.Stdout(probeJson), ProgressEvent.Completed(0)),
         )
 
@@ -65,18 +66,70 @@ class DefaultUrlPreviewServiceTest {
     }
 
     @Test
-    fun `when both paths fail the yt dlp error is surfaced`() = runTest {
+    fun `drm failure does not fall back to ffprobe`() = runTest {
         coEvery { binaryManager.resolve(ComponentId.YT_DLP, any()) } returns info(Path.of("/bin/yt-dlp"))
-        coEvery { binaryManager.resolve(ComponentId.FFPROBE, any()) } returns info(Path.of("/bin/ffprobe"))
-        every { runner.run(any()) } returnsMany listOf(
-            flowOf(ProgressEvent.Failed(YtdlpError(ErrorClass.DRM_PROTECTED, "drm protected"))),
-            flowOf(ProgressEvent.Failed(YtdlpError(ErrorClass.UNKNOWN, "probe failed"))),
+        every { runner.run(any()) } returns flowOf(
+            ProgressEvent.Failed(YtdlpError(ErrorClass.DRM_PROTECTED, "drm protected")),
         )
 
         val result = service.preview("https://example.com/v")
 
         val failure = result as PreviewResult.Failure
         assertEquals(ErrorClass.DRM_PROTECTED, failure.errorClass)
+        coVerify(exactly = 0) { binaryManager.resolve(ComponentId.FFPROBE, any()) }
+    }
+
+    @Test
+    fun `empty yt dlp payload falls back to ffprobe`() = runTest {
+        coEvery { binaryManager.resolve(ComponentId.YT_DLP, any()) } returns info(Path.of("/bin/yt-dlp"))
+        coEvery { binaryManager.resolve(ComponentId.FFPROBE, any()) } returns info(Path.of("/bin/ffprobe"))
+        every { runner.run(any()) } returnsMany listOf(
+            flowOf(ProgressEvent.Stdout("{}"), ProgressEvent.Completed(0)),
+            flowOf(ProgressEvent.Stdout(probeJson), ProgressEvent.Completed(0)),
+        )
+
+        val result = service.preview("https://example.com/v")
+
+        assertTrue(result is PreviewResult.Success)
+        assertEquals("Probe title", (result as PreviewResult.Success).preview.title)
+    }
+
+    @Test
+    fun `broken yt dlp binary falls back to ffprobe without running it`() = runTest {
+        coEvery { binaryManager.resolve(ComponentId.YT_DLP, any()) } returns BinaryInfo(
+            path = Path.of("/bin/yt-dlp"),
+            version = null,
+            source = BinarySource.PATH,
+            status = BinaryStatus.BROKEN,
+            mtimeMillis = null,
+            sizeBytes = null,
+            checkedAtMillis = 0L,
+        )
+        coEvery { binaryManager.resolve(ComponentId.FFPROBE, any()) } returns info(Path.of("/bin/ffprobe"))
+        every { runner.run(any()) } returns flowOf(
+            ProgressEvent.Stdout(probeJson),
+            ProgressEvent.Completed(0),
+        )
+
+        val result = service.preview("https://example.com/v")
+
+        assertTrue(result is PreviewResult.Success)
+        io.mockk.verify(exactly = 1) { runner.run(any()) }
+    }
+
+    @Test
+    fun `when both paths fail the yt dlp error is surfaced`() = runTest {
+        coEvery { binaryManager.resolve(ComponentId.YT_DLP, any()) } returns info(Path.of("/bin/yt-dlp"))
+        coEvery { binaryManager.resolve(ComponentId.FFPROBE, any()) } returns info(Path.of("/bin/ffprobe"))
+        every { runner.run(any()) } returnsMany listOf(
+            flowOf(ProgressEvent.Failed(YtdlpError(ErrorClass.UNKNOWN, "yt-dlp failed"))),
+            flowOf(ProgressEvent.Failed(YtdlpError(ErrorClass.UNKNOWN, "probe failed"))),
+        )
+
+        val result = service.preview("https://example.com/v")
+
+        val failure = result as PreviewResult.Failure
+        assertEquals(ErrorClass.UNKNOWN, failure.errorClass)
     }
 
     @Test

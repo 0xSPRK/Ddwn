@@ -7,6 +7,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -26,6 +28,7 @@ import fetchy.feature.add.components.UrlPreviewCard
 import fetchy.feature.add.generated.resources.Res
 import fetchy.feature.add.generated.resources.add_error_invalid_url
 import fetchy.feature.add.generated.resources.add_idle_hint
+import fetchy.feature.add.generated.resources.add_parsing
 import fetchy.feature.add.generated.resources.add_preview
 import fetchy.feature.add.generated.resources.add_title
 import fetchy.feature.add.generated.resources.add_url_label
@@ -79,7 +82,17 @@ fun AddScreen(
                 modifier = Modifier.fillMaxWidth(),
             )
 
-            AddPhase.PARSING -> FetchyCircularProgress()
+            AddPhase.PARSING -> Column(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(FetchySpacing.sm),
+            ) {
+                Text(
+                    text = stringResource(Res.string.add_parsing),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                FetchyCircularProgress()
+            }
 
             AddPhase.ERROR -> state.error?.let { error ->
                 AddErrorPanel(

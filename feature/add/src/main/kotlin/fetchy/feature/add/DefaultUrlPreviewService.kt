@@ -7,7 +7,9 @@ import fetchy.ytdlp.ProbeParser
 import fetchy.ytdlp.ProgressEvent
 import fetchy.ytdlp.YtDlpInvocation
 import fetchy.ytdlp.YtdlpProcessRunner
+import fetchy.ytdlp.binary.BinaryInfo
 import fetchy.ytdlp.binary.BinaryManager
+import fetchy.ytdlp.binary.BinaryStatus
 import fetchy.ytdlp.binary.ProcessStartException
 import fetchy.ytdlp.components.ComponentId
 import java.nio.file.Path
@@ -25,8 +27,8 @@ class DefaultUrlPreviewService(
 ) : UrlPreviewService {
 
     override suspend fun preview(url: String): PreviewResult {
-        val ytDlpPath: Path = binaryManager.resolve(ComponentId.YT_DLP).path
-            ?: return ffprobePreview(url)
+        val ytDlpPath: Path? = binaryManager.resolve(ComponentId.YT_DLP).takeIf { usable(it) }?.path
+        if (ytDlpPath == null) return ffprobePreview(url)
 
         val command: List<String> =
             listOf(ytDlpPath.toString()) +
@@ -35,24 +37,31 @@ class DefaultUrlPreviewService(
         return when (val result: CommandResult = execute(command)) {
             is CommandResult.Success -> {
                 val preview: UrlPreview? = runCatching { YtDlpJsonParser.parse(result.output) }.getOrNull()
-                if (preview != null) PreviewResult.Success(preview) else ffprobePreview(url)
+                if (preview != null && !preview.isEmpty()) PreviewResult.Success(preview) else ffprobePreview(url)
             }
 
             is CommandResult.Failure -> {
-                val fallback: PreviewResult = ffprobePreview(url)
-                if (fallback is PreviewResult.Success) fallback else PreviewResult.Failure(result.errorClass, result.message)
+                if (result.errorClass == ErrorClass.BINARY_MISSING || result.errorClass == ErrorClass.UNKNOWN) {
+                    val fallback: PreviewResult = ffprobePreview(url)
+                    if (fallback is PreviewResult.Success) fallback else PreviewResult.Failure(result.errorClass, result.message)
+                } else {
+                    PreviewResult.Failure(result.errorClass, result.message)
+                }
             }
         }
     }
 
+    private fun usable(info: BinaryInfo): Boolean =
+        info.path != null && (info.status == BinaryStatus.OK || info.status == BinaryStatus.UNKNOWN_VERSION)
+
     private suspend fun ffprobePreview(url: String): PreviewResult {
-        val ffprobePath: Path = binaryManager.resolve(ComponentId.FFPROBE).path
+        val ffprobePath: Path? = binaryManager.resolve(ComponentId.FFPROBE).takeIf { usable(it) }?.path
             ?: return PreviewResult.Failure(ErrorClass.BINARY_MISSING, "ffprobe is not available")
 
         val command: List<String> = listOf(
             ffprobePath.toString(),
             "-v",
-            "quiet",
+            "error",
             "-print_format",
             "json",
             "-show_format",
@@ -70,7 +79,7 @@ class DefaultUrlPreviewService(
                 }
             }
 
-            is CommandResult.Failure -> PreviewResult.Failure(result.errorClass, result.message)
+            is CommandResult.Failure -> PreviewResult.Failure(result.errorClass, "ffprobe: ${result.message}")
         }
     }
 
@@ -107,6 +116,9 @@ internal fun MediaInfo.toPreview(): UrlPreview = UrlPreview(
     thumbnailUrl = null,
     durationSeconds = durationSeconds,
 )
+
+private fun UrlPreview.isEmpty(): Boolean =
+    title == null && thumbnailUrl == null && durationSeconds == null
 
 internal object YtDlpJsonParser {
 

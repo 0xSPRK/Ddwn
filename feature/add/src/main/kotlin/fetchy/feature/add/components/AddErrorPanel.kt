@@ -13,9 +13,11 @@ import fetchy.designsystem.components.FetchyTextButton
 import fetchy.designsystem.motion.FetchySpacing
 import fetchy.feature.add.AddError
 import fetchy.feature.add.generated.resources.Res
+import fetchy.feature.add.generated.resources.add_error_binary_missing
 import fetchy.feature.add.generated.resources.add_error_drm
 import fetchy.feature.add.generated.resources.add_error_generic
 import fetchy.feature.add.generated.resources.add_error_invalid_url
+import fetchy.feature.add.generated.resources.add_error_unknown
 import fetchy.feature.add.generated.resources.add_hide_log
 import fetchy.feature.add.generated.resources.add_show_log
 import fetchy.model.ErrorClass
@@ -58,10 +60,10 @@ fun AddErrorPanel(
 @Composable
 private fun message(error: AddError): String = when (error) {
     AddError.InvalidUrl -> stringResource(Res.string.add_error_invalid_url)
-    is AddError.Classified ->
-        if (error.errorClass == ErrorClass.DRM_PROTECTED) {
-            stringResource(Res.string.add_error_drm)
-        } else {
-            stringResource(Res.string.add_error_generic, error.message)
-        }
+    is AddError.Classified -> when (error.errorClass) {
+        ErrorClass.DRM_PROTECTED -> stringResource(Res.string.add_error_drm)
+        ErrorClass.BINARY_MISSING -> stringResource(Res.string.add_error_binary_missing)
+        ErrorClass.UNKNOWN -> stringResource(Res.string.add_error_unknown)
+        else -> stringResource(Res.string.add_error_generic, error.message)
+    }
 }

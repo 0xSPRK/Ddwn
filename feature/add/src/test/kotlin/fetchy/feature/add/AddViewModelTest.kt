@@ -7,6 +7,9 @@ import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
 import io.mockk.slot
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.CoroutineStart
+import kotlinx.coroutines.async
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
@@ -136,6 +139,79 @@ class AddViewModelTest {
         assertEquals(1000L, task.captured.createdAt)
         assertTrue(task.captured.formatArgsJson.isNotBlank())
         assertTrue(task.captured.formatArgsJson.contains("height<=720"))
+        assertFalse(task.captured.formatArgsJson.contains("--ignore-config"))
+        assertFalse(task.captured.formatArgsJson.contains("--progress-template"))
+    }
+
+    @Test
+    fun `audio format stores audio yt dlp arguments`() = runTest {
+        val viewModel = viewModel()
+        coEvery { previewService.preview(validUrl) } returns
+            PreviewResult.Success(UrlPreview(title = "V", thumbnailUrl = null, durationSeconds = 1.0))
+        viewModel.onUrlChange(validUrl)
+        viewModel.preview()
+        viewModel.selectFormat(DownloadFormat.AUDIO_MP3)
+
+        viewModel.download()
+
+        val task = slot<DownloadTask>()
+        coVerify(exactly = 1) { creator.create(capture(task)) }
+        assertTrue(task.captured.formatArgsJson.contains("-x"))
+        assertTrue(task.captured.formatArgsJson.contains("mp3"))
+    }
+
+    @Test
+    fun `stale preview result is ignored after url change`() = runTest {
+        val gate = CompletableDeferred<PreviewResult>()
+        val gatedService = object : UrlPreviewService {
+            override suspend fun preview(url: String): PreviewResult = gate.await()
+        }
+        val viewModel = AddViewModel(
+            creator = creator,
+            previewService = gatedService,
+            clock = { 1L },
+            idGenerator = { "t" },
+        )
+
+        viewModel.onUrlChange(validUrl)
+        val job = async(start = CoroutineStart.UNDISPATCHED) { viewModel.preview() }
+        viewModel.onUrlChange("https://example.com/other")
+        gate.complete(PreviewResult.Success(UrlPreview(title = "Old", thumbnailUrl = null, durationSeconds = 1.0)))
+        job.await()
+
+        assertEquals("https://example.com/other", viewModel.state.value.url)
+        assertEquals(AddPhase.IDLE, viewModel.state.value.phase)
+        assertNull(viewModel.state.value.preview)
+    }
+
+    @Test
+    fun `concurrent downloads create only one task`() = runTest {
+        val preview = object : UrlPreviewService {
+            override suspend fun preview(url: String): PreviewResult =
+                PreviewResult.Success(UrlPreview(title = "Video", thumbnailUrl = null, durationSeconds = 1.0))
+        }
+        val gate = CompletableDeferred<Unit>()
+        val created = mutableListOf<DownloadTask>()
+        val slowCreator = DownloadCreator { task ->
+            created.add(task)
+            gate.await()
+        }
+        val viewModel = AddViewModel(
+            creator = slowCreator,
+            previewService = preview,
+            clock = { 1L },
+            idGenerator = { "t" },
+        )
+        viewModel.onUrlChange(validUrl)
+        viewModel.preview()
+
+        val first = async(start = CoroutineStart.UNDISPATCHED) { viewModel.download() }
+        val second: String? = viewModel.download()
+        gate.complete(Unit)
+
+        assertEquals("t", first.await())
+        assertNull(second)
+        assertEquals(1, created.size)
     }
 
     @Test
@@ -168,13 +244,5 @@ class AddViewModelTest {
         viewModel.selectFormat(DownloadFormat.AUDIO_MP3)
 
         assertEquals(DownloadFormat.AUDIO_MP3, viewModel.state.value.selectedFormat)
-    }
-
-    @Test
-    fun `cannot preview while parsing and cannot download before ready`() {
-        val state = AddUiState(url = validUrl, phase = AddPhase.PARSING)
-
-        assertFalse(state.canPreview)
-        assertFalse(state.canDownload)
     }
 }

@@ -23,6 +23,7 @@ import fetchy.feature.add.UrlPreview
 import fetchy.feature.add.generated.resources.Res
 import fetchy.feature.add.generated.resources.add_download
 import fetchy.feature.add.generated.resources.add_duration
+import java.util.Locale
 import org.jetbrains.compose.resources.stringResource
 
 @Composable
@@ -93,8 +94,8 @@ private fun formatDuration(seconds: Double?): String? {
     val minutes: Long = (total % 3600) / 60
     val secs: Long = total % 60
     return if (hours > 0) {
-        "%d:%02d:%02d".format(hours, minutes, secs)
+        String.format(Locale.ROOT, "%d:%02d:%02d", hours, minutes, secs)
     } else {
-        "%d:%02d".format(minutes, secs)
+        String.format(Locale.ROOT, "%d:%02d", minutes, secs)
     }
 }

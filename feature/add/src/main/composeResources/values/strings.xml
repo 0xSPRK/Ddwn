@@ -8,6 +8,8 @@
     <string name="add_idle_hint">Paste a video URL and press Preview to fetch its details.</string>
     <string name="add_error_invalid_url">Enter a valid http or https URL</string>
     <string name="add_error_drm">This video is protected by DRM; yt-dlp cannot download it</string>
+    <string name="add_error_binary_missing">yt-dlp or ffprobe is not available; install the tools and try again</string>
+    <string name="add_error_unknown">Could not read the video details</string>
     <string name="add_error_generic">Could not fetch the URL: %1$s</string>
     <string name="add_show_log">Show log</string>
     <string name="add_hide_log">Hide log</string>

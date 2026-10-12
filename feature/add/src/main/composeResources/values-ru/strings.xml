@@ -8,6 +8,8 @@
     <string name="add_idle_hint">Вставьте ссылку на видео и нажмите «Разобрать».</string>
     <string name="add_error_invalid_url">Введите корректную ссылку http или https</string>
     <string name="add_error_drm">Это видео защищено DRM, yt-dlp не может его скачать</string>
+    <string name="add_error_binary_missing">yt-dlp или ffprobe недоступны: установите инструменты и повторите</string>
+    <string name="add_error_unknown">Не удалось прочитать сведения о видео</string>
     <string name="add_error_generic">Не удалось разобрать ссылку: %1$s</string>
     <string name="add_show_log">Показать лог</string>
     <string name="add_hide_log">Скрыть лог</string>
