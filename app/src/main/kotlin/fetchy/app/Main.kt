@@ -36,7 +36,7 @@ fun main() {
                     onDispose { awtWindow = null }
                 }
                 FetchyTheme {
-                    App()
+                    App(koin = graph.koin)
                 }
             }
         }

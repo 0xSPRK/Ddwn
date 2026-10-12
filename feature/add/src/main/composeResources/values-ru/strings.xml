@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="add_title">Добавить загрузку</string>
+    <string name="add_url_label">Ссылка на видео</string>
+    <string name="add_url_placeholder">https://example.com/video</string>
+    <string name="add_preview">Разобрать</string>
+    <string name="add_parsing">Разбор ссылки…</string>
+    <string name="add_idle_hint">Вставьте ссылку на видео и нажмите «Разобрать».</string>
+    <string name="add_error_invalid_url">Введите корректную ссылку http или https</string>
+    <string name="add_error_drm">Это видео защищено DRM, yt-dlp не может его скачать</string>
+    <string name="add_error_generic">Не удалось разобрать ссылку: %1$s</string>
+    <string name="add_show_log">Показать лог</string>
+    <string name="add_hide_log">Скрыть лог</string>
+    <string name="add_format_label">Формат</string>
+    <string name="add_format_best">Лучшее</string>
+    <string name="add_format_best_1080">Лучшее 1080p</string>
+    <string name="add_format_best_720">Лучшее 720p</string>
+    <string name="add_format_best_480">Лучшее 480p</string>
+    <string name="add_format_audio_mp3">Только аудио (mp3)</string>
+    <string name="add_format_audio_m4a">Только аудио (m4a)</string>
+    <string name="add_download">Скачать</string>
+    <string name="add_duration">Длительность: %1$s</string>
+</resources>

@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="add_title">Add download</string>
+    <string name="add_url_label">Video URL</string>
+    <string name="add_url_placeholder">https://example.com/video</string>
+    <string name="add_preview">Preview</string>
+    <string name="add_parsing">Parsing URL…</string>
+    <string name="add_idle_hint">Paste a video URL and press Preview to fetch its details.</string>
+    <string name="add_error_invalid_url">Enter a valid http or https URL</string>
+    <string name="add_error_drm">This video is protected by DRM; yt-dlp cannot download it</string>
+    <string name="add_error_generic">Could not fetch the URL: %1$s</string>
+    <string name="add_show_log">Show log</string>
+    <string name="add_hide_log">Hide log</string>
+    <string name="add_format_label">Format</string>
+    <string name="add_format_best">Best</string>
+    <string name="add_format_best_1080">Best 1080p</string>
+    <string name="add_format_best_720">Best 720p</string>
+    <string name="add_format_best_480">Best 480p</string>
+    <string name="add_format_audio_mp3">Audio only (mp3)</string>
+    <string name="add_format_audio_m4a">Audio only (m4a)</string>
+    <string name="add_download">Download</string>
+    <string name="add_duration">Duration: %1$s</string>
+</resources>

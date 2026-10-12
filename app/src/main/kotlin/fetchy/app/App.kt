@@ -35,18 +35,29 @@ import fetchy.app.generated.resources.nav_tools
 import fetchy.app.generated.resources.screen_coming_soon
 import fetchy.app.generated.resources.screen_detail
 import fetchy.designsystem.motion.FetchySpacing
+import fetchy.feature.add.AddScreen
+import fetchy.feature.add.AddViewModel
 import fetchy.feature.tools.gallery.GalleryScreen
 import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.stringResource
+import org.koin.core.Koin
 
 @Composable
-fun App() {
+fun App(koin: Koin) {
     val navController = remember { FetchyNavController() }
     Row(modifier = Modifier.fillMaxSize()) {
         NavRail(navController)
         Box(modifier = Modifier.fillMaxSize()) {
             FetchyNavHost(navController) { destination ->
                 when (destination) {
+                    Destination.Add -> {
+                        val addViewModel: AddViewModel = remember { koin.get() }
+                        AddScreen(
+                            viewModel = addViewModel,
+                            onTaskCreated = { navController.topLevel(Destination.Queue) },
+                        )
+                    }
+
                     Destination.Gallery -> GalleryScreen()
                     else -> PlaceholderScreen(destination)
                 }

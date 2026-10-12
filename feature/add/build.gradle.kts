@@ -10,4 +10,7 @@ dependencies {
     implementation(project(":core:platform"))
     implementation(project(":designsystem"))
     implementation(libs.koin.core)
+    implementation(libs.coil.compose)
+    implementation(libs.coil.network.okhttp)
+    implementation(libs.kotlinx.serialization.json)
 }
