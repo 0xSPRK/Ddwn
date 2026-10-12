@@ -17,17 +17,33 @@ object FetchyDatabaseFactory {
 
     fun open(driver: SqlDriver, isNew: Boolean) {
         val schema = FetchyDatabase.Schema
-        if (isNew) {
+        val current: Long = if (isNew) 0L else driver.userVersion()
+        if (isNew || (current == 0L && !driver.hasTable(TABLE_DOWNLOAD))) {
             schema.create(driver)
             driver.setUserVersion(schema.version)
-        } else {
-            val current: Long = driver.userVersion()
-            if (current < schema.version) {
-                schema.migrate(driver, current, schema.version)
-                driver.setUserVersion(schema.version)
-            }
+        } else if (current < schema.version) {
+            schema.migrate(driver, current, schema.version)
+            driver.setUserVersion(schema.version)
         }
     }
+
+    private const val TABLE_DOWNLOAD: String = "download"
+}
+
+@Suppress("UNCHECKED_CAST")
+fun SqlDriver.hasTable(name: String): Boolean {
+    val result: QueryResult<Long> =
+        executeQuery(
+            identifier = null,
+            sql = "SELECT count(*) FROM sqlite_master WHERE type = 'table' AND name = ?",
+            mapper = { cursor ->
+                cursor.next()
+                QueryResult.Value(cursor.getLong(0) ?: 0L)
+            },
+            parameters = 1,
+            binders = { bindString(0, name) },
+        )
+    return (result as QueryResult.Value<Long>).value > 0L
 }
 
 @Suppress("UNCHECKED_CAST")

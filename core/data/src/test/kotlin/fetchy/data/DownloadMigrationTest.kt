@@ -32,6 +32,20 @@ class DownloadMigrationTest {
         assertEquals("https://img/t.jpg", repository.get("a")?.thumbnailUrl)
     }
 
+    @Test
+    fun `open on existing empty database creates schema`() = runTest {
+        val driver = JdbcSqliteDriver(JdbcSqliteDriver.IN_MEMORY)
+        assertEquals(0L, driver.userVersion())
+
+        FetchyDatabaseFactory.open(driver, isNew = false)
+
+        assertEquals(FetchyDatabase.Schema.version, driver.userVersion())
+        val repository = DownloadRepository(FetchyDatabase(driver))
+        val task = DownloadTask(id = "a", url = "https://example.test/a", createdAt = 1L)
+        repository.create(task)
+        assertEquals(null, repository.get("a")?.thumbnailUrl)
+    }
+
     private companion object {
         private const val VERSION_1_SCHEMA: String = """
             CREATE TABLE download (
