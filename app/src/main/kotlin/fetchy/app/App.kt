@@ -33,6 +33,7 @@ import fetchy.app.generated.resources.nav_queue
 import fetchy.app.generated.resources.nav_settings
 import fetchy.app.generated.resources.nav_tools
 import fetchy.app.generated.resources.screen_coming_soon
+import fetchy.app.generated.resources.screen_detail
 import fetchy.designsystem.motion.FetchySpacing
 import fetchy.feature.tools.gallery.GalleryScreen
 import org.jetbrains.compose.resources.StringResource
@@ -114,5 +115,5 @@ private fun destinationLabel(destination: Destination): String = when (destinati
     Destination.Settings -> stringResource(Res.string.nav_settings)
     Destination.Tools -> stringResource(Res.string.nav_tools)
     Destination.Gallery -> stringResource(Res.string.nav_gallery)
-    is Destination.Detail -> "Detail · ${destination.id}"
+    is Destination.Detail -> stringResource(Res.string.screen_detail, destination.id)
 }

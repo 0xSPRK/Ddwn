@@ -9,4 +9,5 @@
     <string name="nav_tools">Инструменты</string>
     <string name="nav_gallery">Галерея</string>
     <string name="screen_coming_soon">Этот экран ещё не реализован</string>
+    <string name="screen_detail">Детали: %1$s</string>
 </resources>

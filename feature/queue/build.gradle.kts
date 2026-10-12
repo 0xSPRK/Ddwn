@@ -11,4 +11,3 @@ dependencies {
     implementation(project(":designsystem"))
     implementation(libs.koin.core)
 }
-

@@ -30,7 +30,7 @@ class FetchyNavController(initial: Destination = Destination.Add) {
         get() = stack.size
 
     val backStack: List<Destination>
-        get() = stack
+        get() = stack.toList()
 
     fun navigate(destination: Destination) {
         stack.add(destination)

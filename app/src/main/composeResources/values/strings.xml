@@ -9,4 +9,5 @@
     <string name="nav_tools">Tools</string>
     <string name="nav_gallery">Gallery</string>
     <string name="screen_coming_soon">This screen is not implemented yet</string>
+    <string name="screen_detail">Details: %1$s</string>
 </resources>

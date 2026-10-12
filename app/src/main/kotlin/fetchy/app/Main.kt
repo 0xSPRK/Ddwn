@@ -51,12 +51,14 @@ private fun shutdown(graph: AppGraph, singleInstance: SingleInstance) {
 }
 
 private fun raiseWindow() {
-    val target = awtWindow ?: return
-    runCatching {
-        if (!target.isVisible) {
-            target.isVisible = true
+    java.awt.EventQueue.invokeLater {
+        val target = awtWindow ?: return@invokeLater
+        runCatching {
+            if (!target.isVisible) {
+                target.isVisible = true
+            }
+            target.toFront()
+            target.requestFocus()
         }
-        target.toFront()
-        target.requestFocus()
     }
 }
