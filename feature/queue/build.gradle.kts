@@ -1,4 +1,4 @@
-﻿plugins {
+plugins {
     id("fetchy.compose")
     id("fetchy.testing")
 }
@@ -10,4 +10,5 @@ dependencies {
     implementation(project(":core:platform"))
     implementation(project(":designsystem"))
     implementation(libs.koin.core)
+    implementation(libs.coroutines.core)
 }
