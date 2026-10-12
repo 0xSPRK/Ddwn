@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Fetchy</string>
+    <string name="nav_add">Добавить</string>
+    <string name="nav_queue">Очередь</string>
+    <string name="nav_history">История</string>
+    <string name="nav_presets">Пресеты</string>
+    <string name="nav_settings">Настройки</string>
+    <string name="nav_tools">Инструменты</string>
+    <string name="nav_gallery">Галерея</string>
+    <string name="screen_coming_soon">Этот экран ещё не реализован</string>
+    <string name="screen_detail">Детали: %1$s</string>
+</resources>

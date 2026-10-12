@@ -1,3 +1,6 @@
 package fetchy.feature.presets
 
-object PresetsModule
+import org.koin.core.module.Module
+import org.koin.dsl.module
+
+val presetsModule: Module = module { }

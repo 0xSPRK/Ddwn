@@ -15,6 +15,10 @@ dependencies {
     implementation(project(":feature:presets"))
     implementation(project(":feature:settings"))
     implementation(project(":feature:tools"))
+    implementation(libs.koin.core)
+    implementation(libs.sqldelight.driver.sqlite)
+    implementation(libs.sqldelight.runtime)
+    implementation(compose.materialIconsExtended)
 }
 
 compose.desktop {
