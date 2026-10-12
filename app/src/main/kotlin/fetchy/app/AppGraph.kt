@@ -70,9 +70,7 @@ class AppGraph private constructor(
             Files.createDirectories(databaseFile.parent)
             val isNew = !Files.exists(databaseFile)
             val driver = JdbcSqliteDriver("jdbc:sqlite:${databaseFile.toAbsolutePath()}")
-            if (isNew) {
-                FetchyDatabase.Schema.create(driver)
-            }
+            FetchyDatabaseFactory.open(driver, isNew)
             return driver
         }
     }

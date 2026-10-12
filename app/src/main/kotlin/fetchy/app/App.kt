@@ -37,6 +37,8 @@ import fetchy.app.generated.resources.screen_detail
 import fetchy.designsystem.motion.FetchySpacing
 import fetchy.feature.add.AddScreen
 import fetchy.feature.add.AddViewModel
+import fetchy.feature.queue.QueueScreen
+import fetchy.feature.queue.QueueViewModel
 import fetchy.feature.tools.gallery.GalleryScreen
 import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.stringResource
@@ -59,6 +61,11 @@ fun App(koin: Koin) {
                     }
 
                     Destination.Gallery -> GalleryScreen()
+                    Destination.Queue -> {
+                        val queueViewModel: QueueViewModel = remember { koin.get() }
+                        QueueScreen(viewModel = queueViewModel)
+                    }
+
                     else -> PlaceholderScreen(destination)
                 }
             }

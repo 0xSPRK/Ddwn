@@ -9,12 +9,13 @@ CREATE TABLE download (
     created_at INTEGER NOT NULL,
     finished_at INTEGER,
     error_class TEXT,
-    log_path TEXT
+    log_path TEXT,
+    thumbnail_url TEXT
 );
 
 insert:
-INSERT INTO download(id, url, title, format_args_json, preset_id, status, progress, created_at, finished_at, error_class, log_path)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+INSERT INTO download(id, url, title, format_args_json, preset_id, status, progress, created_at, finished_at, error_class, log_path, thumbnail_url)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
 
 selectById:
 SELECT *

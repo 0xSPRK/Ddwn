@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="queue_title">Queue</string>
+    <string name="queue_count">%1$d active</string>
+    <string name="queue_empty_title">No active downloads</string>
+    <string name="queue_empty_description">Add a link on the Add tab to start a download.</string>
+    <string name="queue_status_queued">Queued</string>
+    <string name="queue_status_downloading">Downloading</string>
+    <string name="queue_status_completed">Done</string>
+    <string name="queue_status_failed">Failed</string>
+    <string name="queue_status_cancelled">Cancelled</string>
+    <string name="queue_speed">%1$s/s</string>
+    <string name="queue_eta">ETA %1$s</string>
+    <string name="queue_playlist_item">Item %1$d</string>
+</resources>

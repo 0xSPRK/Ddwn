@@ -8,6 +8,7 @@ sqldelight {
     databases {
         create("FetchyDatabase") {
             packageName.set("fetchy.data.db")
+            schemaOutputDirectory.set(file("src/main/sqldelight/databases"))
         }
     }
 }

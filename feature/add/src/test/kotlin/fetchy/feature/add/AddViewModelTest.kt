@@ -144,6 +144,23 @@ class AddViewModelTest {
     }
 
     @Test
+    fun `download stores preview thumbnail on task`() = runTest {
+        val viewModel = viewModel()
+        coEvery { previewService.preview(validUrl) } returns
+            PreviewResult.Success(
+                UrlPreview(title = "My video", thumbnailUrl = "https://img/t.jpg", durationSeconds = 90.0),
+            )
+        viewModel.onUrlChange(validUrl)
+        viewModel.preview()
+
+        viewModel.download()
+
+        val task = slot<DownloadTask>()
+        coVerify(exactly = 1) { creator.create(capture(task)) }
+        assertEquals("https://img/t.jpg", task.captured.thumbnailUrl)
+    }
+
+    @Test
     fun `audio format stores audio yt dlp arguments`() = runTest {
         val viewModel = viewModel()
         coEvery { previewService.preview(validUrl) } returns

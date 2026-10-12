@@ -16,11 +16,20 @@ class DownloadRepositoryTest {
 
     @Test
     fun createThenGetReturnsTask() = runTest {
-        val task = task("a", createdAt = 1L, title = "Alpha")
+        val task = task("a", createdAt = 1L, title = "Alpha", thumbnailUrl = "https://img/a.jpg")
 
         repository.create(task)
 
         assertEquals(task, repository.get("a"))
+    }
+
+    @Test
+    fun thumbnailUrlRoundTripsAndDefaultsToNull() = runTest {
+        repository.create(task("a", createdAt = 1L, thumbnailUrl = "https://img/a.jpg"))
+        repository.create(task("b", createdAt = 2L, thumbnailUrl = null))
+
+        assertEquals("https://img/a.jpg", repository.get("a")?.thumbnailUrl)
+        assertNull(repository.get("b")?.thumbnailUrl)
     }
 
     @Test
@@ -104,10 +113,12 @@ class DownloadRepositoryTest {
         createdAt: Long,
         title: String? = "Title $id",
         status: TaskStatus = TaskStatus.QUEUED,
+        thumbnailUrl: String? = null,
     ) = DownloadTask(
         id = id,
         url = "https://example.test/$id",
         title = title,
+        thumbnailUrl = thumbnailUrl,
         createdAt = createdAt,
         status = status,
     )

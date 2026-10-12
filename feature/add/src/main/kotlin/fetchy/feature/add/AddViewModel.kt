@@ -140,6 +140,7 @@ class AddViewModel(
             id = id,
             url = url,
             title = current.preview?.title,
+            thumbnailUrl = current.preview?.thumbnailUrl,
             formatArgsJson = formatArgsJson(current.selectedFormat),
             status = TaskStatus.QUEUED,
             createdAt = clock(),

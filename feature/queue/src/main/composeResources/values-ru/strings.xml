@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="queue_title">Очередь</string>
+    <string name="queue_count">Активных: %1$d</string>
+    <string name="queue_empty_title">Нет активных загрузок</string>
+    <string name="queue_empty_description">Добавьте ссылку на вкладке «Добавить», чтобы начать загрузку.</string>
+    <string name="queue_status_queued">В очереди</string>
+    <string name="queue_status_downloading">Загрузка</string>
+    <string name="queue_status_completed">Готово</string>
+    <string name="queue_status_failed">Ошибка</string>
+    <string name="queue_status_cancelled">Отменено</string>
+    <string name="queue_speed">%1$s/с</string>
+    <string name="queue_eta">Осталось %1$s</string>
+    <string name="queue_playlist_item">Элемент %1$d</string>
+</resources>

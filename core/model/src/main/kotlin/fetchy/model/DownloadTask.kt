@@ -4,6 +4,7 @@ data class DownloadTask(
     val id: String,
     val url: String,
     val title: String? = null,
+    val thumbnailUrl: String? = null,
     val formatArgsJson: String = "[]",
     val presetId: String? = null,
     val status: TaskStatus = TaskStatus.QUEUED,

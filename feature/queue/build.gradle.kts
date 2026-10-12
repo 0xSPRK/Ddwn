@@ -11,4 +11,6 @@ dependencies {
     implementation(project(":designsystem"))
     implementation(libs.koin.core)
     implementation(libs.coroutines.core)
+    implementation(libs.coil.compose)
+    implementation(libs.coil.network.okhttp)
 }

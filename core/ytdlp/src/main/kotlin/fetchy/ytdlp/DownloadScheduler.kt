@@ -2,6 +2,7 @@ package fetchy.ytdlp
 
 import fetchy.model.DownloadTask
 import fetchy.model.ErrorClass
+import fetchy.model.ProgressInfo
 import fetchy.model.TaskStateStore
 import fetchy.model.TaskStatus
 import fetchy.model.YtdlpError
@@ -29,7 +30,7 @@ import kotlinx.coroutines.withContext
 sealed interface SchedulerEvent {
     data class Started(val taskId: String) : SchedulerEvent
 
-    data class Progressed(val taskId: String, val progress: Double) : SchedulerEvent
+    data class Progressed(val taskId: String, val progress: Double, val info: ProgressInfo) : SchedulerEvent
 
     data class Finished(
         val taskId: String,
@@ -165,7 +166,7 @@ class DownloadScheduler(
                             val fraction: Double = event.info.fraction ?: lastProgress
                             lastProgress = fraction
                             stateStore.updateProgress(task.id, fraction)
-                            eventsFlow.tryEmit(SchedulerEvent.Progressed(task.id, fraction))
+                            eventsFlow.tryEmit(SchedulerEvent.Progressed(task.id, fraction, event.info))
                         }
 
                         is ProgressEvent.Completed -> {

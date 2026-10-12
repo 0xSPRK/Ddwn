@@ -404,7 +404,7 @@ class DownloadSchedulerTest {
         advanceUntilIdle()
 
         assertEquals(SchedulerEvent.Started("a"), events.first())
-        assertTrue(events.contains(SchedulerEvent.Progressed("a", 0.5)))
+        assertTrue(events.contains(SchedulerEvent.Progressed("a", 0.5, progress(0.5))))
         assertEquals(SchedulerEvent.Finished("a", TaskStatus.COMPLETED, null), events.last())
         scheduler.close()
         advanceUntilIdle()

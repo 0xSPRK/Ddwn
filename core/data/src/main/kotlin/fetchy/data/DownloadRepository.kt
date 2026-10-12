@@ -44,6 +44,7 @@ class DownloadRepository(
                 task.finishedAt,
                 task.errorClass?.name,
                 task.logPath,
+                task.thumbnailUrl,
             )
         }
     }
@@ -83,4 +84,5 @@ internal fun Download.toModel(): DownloadTask = DownloadTask(
     finishedAt = finished_at,
     errorClass = error_class?.let(ErrorClass::valueOf),
     logPath = log_path,
+    thumbnailUrl = thumbnail_url,
 )
