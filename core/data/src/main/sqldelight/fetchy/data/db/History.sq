@@ -31,7 +31,7 @@ ORDER BY created_at DESC;
 searchFiltered:
 SELECT *
 FROM history
-WHERE (title LIKE '%' || :query || '%' OR url LIKE '%' || :query || '%')
+WHERE (title LIKE '%' || :query || '%' ESCAPE '\' OR url LIKE '%' || :query || '%' ESCAPE '\')
   AND (:statusValue IS NULL OR status = :statusValue)
   AND (:fromMillis IS NULL OR created_at >= :fromMillis)
   AND (:toMillis IS NULL OR created_at <= :toMillis)

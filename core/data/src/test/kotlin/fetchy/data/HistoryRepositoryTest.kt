@@ -96,6 +96,16 @@ class HistoryRepositoryTest {
         assertEquals(0L, repository.count())
     }
 
+    @Test
+    fun searchTreatsLikeWildcardsLiterally() = runTest {
+        repository.insert(entry("percent", url = "https://example.test/100%25", createdAt = 1L))
+        repository.insert(entry("thousand", url = "https://example.test/10000", createdAt = 2L))
+
+        val matches = repository.search("100%", limit = 10).first().map { it.id }
+
+        assertEquals(listOf("percent"), matches)
+    }
+
     private fun entry(
         id: String,
         title: String? = "Title $id",

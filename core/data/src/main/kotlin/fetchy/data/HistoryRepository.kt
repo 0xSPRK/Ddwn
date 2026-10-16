@@ -55,7 +55,7 @@ class SqlDelightHistoryRepository(
         limit: Long,
         offset: Long,
     ): Flow<List<HistoryEntry>> =
-        queries.searchFiltered(query, status?.name, fromMillis, toMillis, limit, offset)
+        queries.searchFiltered(query.escapeLike(), status?.name, fromMillis, toMillis, limit, offset)
             .asFlow()
             .mapToList(dispatcher)
             .map { rows -> rows.map(History::toModel) }
@@ -94,6 +94,9 @@ class SqlDelightHistoryRepository(
 
     override suspend fun count(): Long = withContext(dispatcher) { queries.countAll().executeAsOne() }
 }
+
+private fun String.escapeLike(): String =
+    replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
 
 internal fun History.toModel(): HistoryEntry = HistoryEntry(
     id = id,

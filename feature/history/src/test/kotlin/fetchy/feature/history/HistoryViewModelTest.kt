@@ -239,6 +239,20 @@ class HistoryViewModelTest {
         viewModel.close()
     }
 
+    @Test
+    fun `state exposes the current query`() = runTest {
+        val repository = FakeHistoryRepository(listOf(entry("a", createdAt = 1L)))
+        val viewModel = createViewModel(repository)
+
+        viewModel.onQueryChange("cats")
+
+        viewModel.state.test {
+            assertEquals("cats", awaitUntil { it.query == "cats" }.query)
+            cancelAndIgnoreRemainingEvents()
+        }
+        viewModel.close()
+    }
+
     private fun TestScope.createViewModel(
         repository: HistoryRepository,
         pageSize: Long = HistoryViewModel.DEFAULT_PAGE_SIZE,

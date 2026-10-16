@@ -94,6 +94,7 @@ private data class HistoryPage(
 
 private fun HistoryPage.toUiState(pageSize: Long): HistoryUiState = HistoryUiState(
     entries = entries,
+    query = criteria.query,
     statusFilter = criteria.status,
     periodFilter = criteria.period,
     canLoadMore = entries.size.toLong() >= pageSize * criteria.pages,

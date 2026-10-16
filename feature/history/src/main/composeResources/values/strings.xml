@@ -7,6 +7,8 @@
     <string name="history_status_completed">Completed</string>
     <string name="history_status_failed">Failed</string>
     <string name="history_status_cancelled">Cancelled</string>
+    <string name="history_status_queued">Queued</string>
+    <string name="history_status_downloading">Downloading</string>
     <string name="history_period_all">Any time</string>
     <string name="history_period_day">Last 24 hours</string>
     <string name="history_period_week">Last 7 days</string>

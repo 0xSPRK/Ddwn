@@ -52,7 +52,7 @@ fun HistoryScreen(
     modifier: Modifier = Modifier,
 ) {
     val state: HistoryUiState by viewModel.state.collectAsState()
-    var query: String by remember { mutableStateOf("") }
+    var query: String by remember { mutableStateOf(state.query) }
     var pendingDelete: HistoryEntry? by remember { mutableStateOf(null) }
 
     Column(

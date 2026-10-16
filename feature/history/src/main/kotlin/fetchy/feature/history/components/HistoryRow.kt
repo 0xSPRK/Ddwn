@@ -18,10 +18,11 @@ import fetchy.designsystem.motion.FetchySpacing
 import fetchy.feature.history.formatHistoryTimestamp
 import fetchy.feature.history.generated.resources.Res
 import fetchy.feature.history.generated.resources.history_delete
-import fetchy.feature.history.generated.resources.history_status_all
 import fetchy.feature.history.generated.resources.history_status_cancelled
 import fetchy.feature.history.generated.resources.history_status_completed
+import fetchy.feature.history.generated.resources.history_status_downloading
 import fetchy.feature.history.generated.resources.history_status_failed
+import fetchy.feature.history.generated.resources.history_status_queued
 import fetchy.model.HistoryEntry
 import fetchy.model.TaskStatus
 import org.jetbrains.compose.resources.stringResource
@@ -88,5 +89,6 @@ private fun statusLabel(status: TaskStatus) = when (status) {
     TaskStatus.COMPLETED -> Res.string.history_status_completed
     TaskStatus.FAILED -> Res.string.history_status_failed
     TaskStatus.CANCELLED -> Res.string.history_status_cancelled
-    TaskStatus.QUEUED, TaskStatus.DOWNLOADING -> Res.string.history_status_all
+    TaskStatus.QUEUED -> Res.string.history_status_queued
+    TaskStatus.DOWNLOADING -> Res.string.history_status_downloading
 }

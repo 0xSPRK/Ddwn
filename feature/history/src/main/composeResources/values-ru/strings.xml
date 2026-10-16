@@ -7,6 +7,8 @@
     <string name="history_status_completed">Завершено</string>
     <string name="history_status_failed">Ошибка</string>
     <string name="history_status_cancelled">Отменено</string>
+    <string name="history_status_queued">В очереди</string>
+    <string name="history_status_downloading">Загрузка</string>
     <string name="history_period_all">За всё время</string>
     <string name="history_period_day">За сутки</string>
     <string name="history_period_week">За 7 дней</string>
