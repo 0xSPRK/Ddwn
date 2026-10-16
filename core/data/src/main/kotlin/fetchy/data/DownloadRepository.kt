@@ -64,6 +64,8 @@ class DownloadRepository(
                 queries.updateStatus(status.name, progress, finishedAt, errorClass?.name, id)
                 if (status.isTerminal) {
                     database.historyQueries.archiveFromDownload(id)
+                } else {
+                    database.historyQueries.deleteById(id)
                 }
             }
         }

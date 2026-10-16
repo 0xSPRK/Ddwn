@@ -97,6 +97,8 @@ class DownloadRepositoryTest {
         assertEquals(0.3, archived.progress, 1e-9)
         assertEquals(ErrorClass.NETWORK, archived.errorClass)
         assertEquals(99L, archived.finishedAt)
+        assertNull(archived.filePath)
+        assertNull(archived.durationMs)
     }
 
     @Test
@@ -118,6 +120,17 @@ class DownloadRepositoryTest {
 
         assertEquals(1L, history.count())
         assertEquals(TaskStatus.COMPLETED, history.get("a")?.status)
+    }
+
+    @Test
+    fun reactivatingTaskRemovesItsHistoryEntry() = runTest {
+        repository.create(task("a", createdAt = 1L))
+
+        repository.updateStatus(id = "a", status = TaskStatus.FAILED, progress = 0.2, finishedAt = 1L)
+        repository.updateStatus(id = "a", status = TaskStatus.QUEUED, progress = 0.0, finishedAt = null)
+
+        assertNull(history.get("a"))
+        assertEquals(0L, history.count())
     }
 
     @Test

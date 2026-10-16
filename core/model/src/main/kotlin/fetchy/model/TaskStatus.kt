@@ -9,5 +9,8 @@ enum class TaskStatus {
     ;
 
     val isTerminal: Boolean
-        get() = this == COMPLETED || this == FAILED || this == CANCELLED
+        get() = when (this) {
+            QUEUED, DOWNLOADING -> false
+            COMPLETED, FAILED, CANCELLED -> true
+        }
 }

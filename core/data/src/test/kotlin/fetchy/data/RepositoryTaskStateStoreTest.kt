@@ -96,6 +96,19 @@ class RepositoryTaskStateStoreTest {
         assertEquals(555L, archived.finishedAt)
     }
 
+    @Test
+    fun markCancelledArchivesTaskIntoHistory() = runTest {
+        repository.create(task("a", status = TaskStatus.DOWNLOADING))
+
+        store.markCancelled("a", progress = 0.25, finishedAt = 999L)
+
+        val archived = requireNotNull(history.get("a"))
+        assertEquals(TaskStatus.CANCELLED, archived.status)
+        assertEquals(0.25, archived.progress, 1e-9)
+        assertEquals(999L, archived.finishedAt)
+        assertNull(archived.errorClass)
+    }
+
     private fun task(id: String, status: TaskStatus = TaskStatus.QUEUED): DownloadTask =
         DownloadTask(
             id = id,
