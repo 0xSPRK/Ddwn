@@ -144,6 +144,30 @@ class DownloadRepositoryTest {
     }
 
     @Test
+    fun requeueKeepsQueuedTaskProgressButResetsRunningProgress() = runTest {
+        repository.create(task("queued", createdAt = 1L, status = TaskStatus.QUEUED, progress = 0.25))
+        repository.create(task("running", createdAt = 2L, status = TaskStatus.DOWNLOADING, progress = 0.5))
+
+        repository.requeue()
+
+        assertEquals(0.25, requireNotNull(repository.get("queued")).progress, 1e-9)
+        assertEquals(0.0, requireNotNull(repository.get("running")).progress, 1e-9)
+    }
+
+    @Test
+    fun requeueIsIdempotent() = runTest {
+        repository.create(task("running", createdAt = 1L, status = TaskStatus.DOWNLOADING, progress = 0.7))
+
+        val first = repository.requeue()
+        val second = repository.requeue()
+
+        assertEquals(listOf("running"), first.map { it.id })
+        assertEquals(listOf("running"), second.map { it.id })
+        assertEquals(TaskStatus.QUEUED, repository.get("running")?.status)
+        assertEquals(0.0, requireNotNull(repository.get("running")).progress, 1e-9)
+    }
+
+    @Test
     fun requeueExcludesFinishedAndFailedTasks() = runTest {
         repository.create(task("done", createdAt = 1L, status = TaskStatus.COMPLETED))
         repository.create(task("failed", createdAt = 2L, status = TaskStatus.FAILED))

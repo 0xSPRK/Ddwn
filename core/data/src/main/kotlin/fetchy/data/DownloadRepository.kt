@@ -14,7 +14,7 @@ import kotlinx.coroutines.withContext
 import kotlin.coroutines.CoroutineContext
 
 class DownloadRepository(
-    database: FetchyDatabase,
+    private val database: FetchyDatabase,
     private val dispatcher: CoroutineContext = Dispatchers.IO,
 ) {
 
@@ -69,8 +69,10 @@ class DownloadRepository(
     }
 
     suspend fun requeue(): List<DownloadTask> = withContext(dispatcher) {
-        queries.resetInterrupted()
-        queries.selectActive().executeAsList().map(Download::toModel)
+        database.transactionWithResult {
+            queries.resetInterrupted()
+            queries.selectActive().executeAsList().map(Download::toModel)
+        }
     }
 
     suspend fun delete(id: String) {
