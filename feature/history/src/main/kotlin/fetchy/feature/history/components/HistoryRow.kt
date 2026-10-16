@@ -10,6 +10,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import fetchy.designsystem.components.FetchyOutlinedCard
@@ -25,15 +26,17 @@ import fetchy.feature.history.generated.resources.history_status_failed
 import fetchy.feature.history.generated.resources.history_status_queued
 import fetchy.model.HistoryEntry
 import fetchy.model.TaskStatus
+import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.stringResource
 
 @Composable
 fun HistoryRow(
     entry: HistoryEntry,
+    onOpen: () -> Unit,
     onDelete: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    FetchyOutlinedCard(modifier = modifier.fillMaxWidth()) {
+    FetchyOutlinedCard(modifier = modifier.fillMaxWidth(), onClick = onOpen) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -79,13 +82,13 @@ fun HistoryRow(
 }
 
 @Composable
-private fun statusColor(status: TaskStatus) = when (status) {
+internal fun statusColor(status: TaskStatus): Color = when (status) {
     TaskStatus.COMPLETED -> MaterialTheme.colorScheme.primary
     TaskStatus.FAILED -> MaterialTheme.colorScheme.error
     else -> MaterialTheme.colorScheme.onSurfaceVariant
 }
 
-private fun statusLabel(status: TaskStatus) = when (status) {
+internal fun statusLabel(status: TaskStatus): StringResource = when (status) {
     TaskStatus.COMPLETED -> Res.string.history_status_completed
     TaskStatus.FAILED -> Res.string.history_status_failed
     TaskStatus.CANCELLED -> Res.string.history_status_cancelled

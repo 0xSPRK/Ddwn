@@ -20,4 +20,21 @@ class HistoryFormattersTest {
 
         assertEquals("2026-10-16 03:30", formatHistoryTimestamp(millis, ZoneOffset.ofHours(3)))
     }
+
+    @Test
+    fun `formats a duration with minutes and seconds`() {
+        assertEquals("2:03", formatDuration(123_000L))
+    }
+
+    @Test
+    fun `formats a duration with hours`() {
+        assertEquals("1:02:03", formatDuration(3_723_000L))
+    }
+
+    @Test
+    fun `formats a missing or non positive duration as zero`() {
+        assertEquals("0:00", formatDuration(null))
+        assertEquals("0:00", formatDuration(0L))
+        assertEquals("0:00", formatDuration(-5_000L))
+    }
 }

@@ -20,6 +20,7 @@ import androidx.compose.material3.NavigationRail
 import androidx.compose.material3.NavigationRailItem
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -46,6 +47,8 @@ import fetchy.designsystem.components.FetchyAlertDialog
 import fetchy.designsystem.motion.FetchySpacing
 import fetchy.feature.add.AddScreen
 import fetchy.feature.add.AddViewModel
+import fetchy.feature.history.HistoryDetailScreen
+import fetchy.feature.history.HistoryDetailViewModel
 import fetchy.feature.history.HistoryScreen
 import fetchy.feature.history.HistoryViewModel
 import fetchy.feature.queue.QueueRecovery
@@ -56,6 +59,7 @@ import fetchy.model.DownloadTask
 import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.stringResource
 import org.koin.core.Koin
+import org.koin.core.parameter.parametersOf
 
 @Composable
 fun App(koin: Koin) {
@@ -87,7 +91,25 @@ fun App(koin: Koin) {
 
                     Destination.History -> {
                         val historyViewModel: HistoryViewModel = remember { koin.get() }
-                        HistoryScreen(viewModel = historyViewModel)
+                        HistoryScreen(
+                            viewModel = historyViewModel,
+                            onOpenDetail = { id -> navController.navigate(Destination.Detail(id)) },
+                        )
+                    }
+
+                    is Destination.Detail -> {
+                        val detailViewModel: HistoryDetailViewModel = remember(destination.id) {
+                            koin.get { parametersOf(destination.id) }
+                        }
+                        DisposableEffect(detailViewModel) {
+                            onDispose { detailViewModel.close() }
+                        }
+                        HistoryDetailScreen(
+                            viewModel = detailViewModel,
+                            onBack = {
+                                if (!navController.pop()) navController.topLevel(Destination.History)
+                            },
+                        )
                     }
 
                     else -> PlaceholderScreen(destination)

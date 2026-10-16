@@ -49,6 +49,7 @@ import org.jetbrains.compose.resources.stringResource
 @Composable
 fun HistoryScreen(
     viewModel: HistoryViewModel,
+    onOpenDetail: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val state: HistoryUiState by viewModel.state.collectAsState()
@@ -112,6 +113,7 @@ fun HistoryScreen(
                 items(state.entries, key = { it.id }) { entry ->
                     HistoryRow(
                         entry = entry,
+                        onOpen = { onOpenDetail(entry.id) },
                         onDelete = { pendingDelete = entry },
                     )
                 }
