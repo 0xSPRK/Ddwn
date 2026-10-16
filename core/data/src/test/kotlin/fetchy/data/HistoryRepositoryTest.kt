@@ -10,7 +10,7 @@ import org.junit.jupiter.api.Test
 
 class HistoryRepositoryTest {
 
-    private val repository = HistoryRepository(FetchyDatabaseFactory.inMemory())
+    private val repository: HistoryRepository = SqlDelightHistoryRepository(FetchyDatabaseFactory.inMemory())
 
     @Test
     fun insertThenGetRoundTripsAllFields() = runTest {
@@ -59,6 +59,28 @@ class HistoryRepositoryTest {
         val page = repository.search("same", limit = 1, offset = 1).first().map { it.id }
 
         assertEquals(listOf("x2"), page)
+    }
+
+    @Test
+    fun searchFiltersByStatus() = runTest {
+        repository.insert(entry("ok", status = TaskStatus.COMPLETED, createdAt = 2L))
+        repository.insert(entry("bad", status = TaskStatus.FAILED, createdAt = 1L))
+
+        val failed = repository.search("", status = TaskStatus.FAILED, limit = 10).first().map { it.id }
+
+        assertEquals(listOf("bad"), failed)
+    }
+
+    @Test
+    fun searchFiltersByCreatedAtRange() = runTest {
+        repository.insert(entry("old", createdAt = 100L))
+        repository.insert(entry("recent", createdAt = 900L))
+
+        val windowed = repository.search("", fromMillis = 500L, limit = 10).first().map { it.id }
+        val bounded = repository.search("", toMillis = 500L, limit = 10).first().map { it.id }
+
+        assertEquals(listOf("recent"), windowed)
+        assertEquals(listOf("old"), bounded)
     }
 
     @Test

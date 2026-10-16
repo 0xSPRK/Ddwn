@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="history_title">History</string>
+    <string name="history_search_label">Search</string>
+    <string name="history_search_placeholder">Search by title or URL</string>
+    <string name="history_status_all">All</string>
+    <string name="history_status_completed">Completed</string>
+    <string name="history_status_failed">Failed</string>
+    <string name="history_status_cancelled">Cancelled</string>
+    <string name="history_period_all">Any time</string>
+    <string name="history_period_day">Last 24 hours</string>
+    <string name="history_period_week">Last 7 days</string>
+    <string name="history_period_month">Last 30 days</string>
+    <string name="history_empty_title">No downloads yet</string>
+    <string name="history_empty_description">Completed and failed downloads will appear here. Adjust your search or filters to see more.</string>
+    <string name="history_load_more">Load more</string>
+    <string name="history_delete">Delete</string>
+    <string name="history_delete_title">Delete entry</string>
+    <string name="history_delete_message">Remove “%1$s” from history? This cannot be undone.</string>
+    <string name="history_delete_confirm">Delete</string>
+    <string name="history_delete_dismiss">Cancel</string>
+</resources>

@@ -8,6 +8,7 @@ import fetchy.data.FetchyDatabaseFactory
 import fetchy.data.HistoryRepository
 import fetchy.data.PresetRepository
 import fetchy.data.SettingsRepository
+import fetchy.data.SqlDelightHistoryRepository
 import fetchy.data.db.FetchyDatabase
 import fetchy.feature.add.addModule
 import fetchy.feature.history.historyModule
@@ -61,7 +62,7 @@ class AppGraph private constructor(
             }
             single { FetchyDatabaseFactory.create(get()) }
             single { DownloadRepository(get()) }
-            single { HistoryRepository(get()) }
+            single<HistoryRepository> { SqlDelightHistoryRepository(get()) }
             single { PresetRepository(get()) }
             single { SettingsRepository(get()) }
         }

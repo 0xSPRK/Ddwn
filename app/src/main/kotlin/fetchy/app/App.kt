@@ -46,6 +46,8 @@ import fetchy.designsystem.components.FetchyAlertDialog
 import fetchy.designsystem.motion.FetchySpacing
 import fetchy.feature.add.AddScreen
 import fetchy.feature.add.AddViewModel
+import fetchy.feature.history.HistoryScreen
+import fetchy.feature.history.HistoryViewModel
 import fetchy.feature.queue.QueueRecovery
 import fetchy.feature.queue.QueueScreen
 import fetchy.feature.queue.QueueViewModel
@@ -81,6 +83,11 @@ fun App(koin: Koin) {
                     Destination.Queue -> {
                         val queueViewModel: QueueViewModel = remember { koin.get() }
                         QueueScreen(viewModel = queueViewModel)
+                    }
+
+                    Destination.History -> {
+                        val historyViewModel: HistoryViewModel = remember { koin.get() }
+                        HistoryScreen(viewModel = historyViewModel)
                     }
 
                     else -> PlaceholderScreen(destination)

@@ -13,27 +13,58 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import kotlin.coroutines.CoroutineContext
 
-class HistoryRepository(
+interface HistoryRepository {
+
+    fun observeAll(): Flow<List<HistoryEntry>>
+
+    fun search(
+        query: String,
+        status: TaskStatus? = null,
+        fromMillis: Long? = null,
+        toMillis: Long? = null,
+        limit: Long,
+        offset: Long = 0L,
+    ): Flow<List<HistoryEntry>>
+
+    suspend fun get(id: String): HistoryEntry?
+
+    suspend fun insert(entry: HistoryEntry)
+
+    suspend fun delete(id: String)
+
+    suspend fun deleteAll()
+
+    suspend fun count(): Long
+}
+
+class SqlDelightHistoryRepository(
     database: FetchyDatabase,
     private val dispatcher: CoroutineContext = Dispatchers.IO,
-) {
+) : HistoryRepository {
 
     private val queries = database.historyQueries
 
-    fun observeAll(): Flow<List<HistoryEntry>> =
+    override fun observeAll(): Flow<List<HistoryEntry>> =
         queries.selectAll().asFlow().mapToList(dispatcher).map { rows -> rows.map(History::toModel) }
 
-    fun search(query: String, limit: Long, offset: Long): Flow<List<HistoryEntry>> =
-        queries.search(query, query, limit, offset)
+    override fun search(
+        query: String,
+        status: TaskStatus?,
+        fromMillis: Long?,
+        toMillis: Long?,
+        limit: Long,
+        offset: Long,
+    ): Flow<List<HistoryEntry>> =
+        queries.searchFiltered(query, status?.name, fromMillis, toMillis, limit, offset)
             .asFlow()
             .mapToList(dispatcher)
             .map { rows -> rows.map(History::toModel) }
 
-    suspend fun get(id: String): HistoryEntry? = withContext(dispatcher) {
+    override suspend fun get(id: String): HistoryEntry? = withContext(dispatcher) {
         queries.selectById(id).executeAsOneOrNull()?.toModel()
     }
 
-    suspend fun insert(entry: HistoryEntry) {
+    override suspend fun insert(entry: HistoryEntry) {
         withContext(dispatcher) {
             queries.insert(
                 entry.id,
@@ -53,15 +84,15 @@ class HistoryRepository(
         }
     }
 
-    suspend fun delete(id: String) {
+    override suspend fun delete(id: String) {
         withContext(dispatcher) { queries.deleteById(id) }
     }
 
-    suspend fun deleteAll() {
+    override suspend fun deleteAll() {
         withContext(dispatcher) { queries.deleteAll() }
     }
 
-    suspend fun count(): Long = withContext(dispatcher) { queries.countAll().executeAsOne() }
+    override suspend fun count(): Long = withContext(dispatcher) { queries.countAll().executeAsOne() }
 }
 
 internal fun History.toModel(): HistoryEntry = HistoryEntry(

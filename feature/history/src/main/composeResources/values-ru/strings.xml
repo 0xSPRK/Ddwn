@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="history_title">История</string>
+    <string name="history_search_label">Поиск</string>
+    <string name="history_search_placeholder">Поиск по названию или ссылке</string>
+    <string name="history_status_all">Все</string>
+    <string name="history_status_completed">Завершено</string>
+    <string name="history_status_failed">Ошибка</string>
+    <string name="history_status_cancelled">Отменено</string>
+    <string name="history_period_all">За всё время</string>
+    <string name="history_period_day">За сутки</string>
+    <string name="history_period_week">За 7 дней</string>
+    <string name="history_period_month">За 30 дней</string>
+    <string name="history_empty_title">Пока пусто</string>
+    <string name="history_empty_description">Здесь появятся завершённые и неудачные загрузки. Измените поиск или фильтры, чтобы увидеть больше.</string>
+    <string name="history_load_more">Показать ещё</string>
+    <string name="history_delete">Удалить</string>
+    <string name="history_delete_title">Удалить запись</string>
+    <string name="history_delete_message">Удалить «%1$s» из истории? Это действие нельзя отменить.</string>
+    <string name="history_delete_confirm">Удалить</string>
+    <string name="history_delete_dismiss">Отмена</string>
+</resources>

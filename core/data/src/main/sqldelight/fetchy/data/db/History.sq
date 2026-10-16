@@ -28,12 +28,15 @@ SELECT *
 FROM history
 ORDER BY created_at DESC;
 
-search:
+searchFiltered:
 SELECT *
 FROM history
-WHERE (title LIKE '%' || ? || '%' OR url LIKE '%' || ? || '%')
+WHERE (title LIKE '%' || :query || '%' OR url LIKE '%' || :query || '%')
+  AND (:statusValue IS NULL OR status = :statusValue)
+  AND (:fromMillis IS NULL OR created_at >= :fromMillis)
+  AND (:toMillis IS NULL OR created_at <= :toMillis)
 ORDER BY created_at DESC
-LIMIT ? OFFSET ?;
+LIMIT :limit OFFSET :offset;
 
 countAll:
 SELECT count(*)
