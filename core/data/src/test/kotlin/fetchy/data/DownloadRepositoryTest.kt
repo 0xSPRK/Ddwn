@@ -121,12 +121,64 @@ class DownloadRepositoryTest {
         assertTrue(repository.observeAll().first().isEmpty())
     }
 
+    @Test
+    fun requeueResetsInterruptedRunningTaskWithZeroProgress() = runTest {
+        repository.create(task("a", createdAt = 1L, status = TaskStatus.DOWNLOADING, progress = 0.5))
+
+        val resumable = repository.requeue()
+
+        assertEquals(listOf("a"), resumable.map { it.id })
+        val recovered = requireNotNull(repository.get("a"))
+        assertEquals(TaskStatus.QUEUED, recovered.status)
+        assertEquals(0.0, recovered.progress, 1e-9)
+    }
+
+    @Test
+    fun requeueKeepsQueuedTasks() = runTest {
+        repository.create(task("a", createdAt = 1L, status = TaskStatus.QUEUED))
+
+        val resumable = repository.requeue()
+
+        assertEquals(listOf("a"), resumable.map { it.id })
+        assertEquals(TaskStatus.QUEUED, repository.get("a")?.status)
+    }
+
+    @Test
+    fun requeueExcludesFinishedAndFailedTasks() = runTest {
+        repository.create(task("done", createdAt = 1L, status = TaskStatus.COMPLETED))
+        repository.create(task("failed", createdAt = 2L, status = TaskStatus.FAILED))
+        repository.create(task("cancelled", createdAt = 3L, status = TaskStatus.CANCELLED))
+
+        val resumable = repository.requeue()
+
+        assertTrue(resumable.isEmpty())
+        assertEquals(TaskStatus.COMPLETED, repository.get("done")?.status)
+        assertEquals(TaskStatus.FAILED, repository.get("failed")?.status)
+        assertEquals(TaskStatus.CANCELLED, repository.get("cancelled")?.status)
+    }
+
+    @Test
+    fun requeueReturnsResumableTasksInCreationOrder() = runTest {
+        repository.create(task("running", createdAt = 2L, status = TaskStatus.DOWNLOADING))
+        repository.create(task("queued", createdAt = 1L, status = TaskStatus.QUEUED))
+
+        val resumable = repository.requeue()
+
+        assertEquals(listOf("queued", "running"), resumable.map { it.id })
+    }
+
+    @Test
+    fun requeueOnEmptyDatabaseReturnsEmptyList() = runTest {
+        assertTrue(repository.requeue().isEmpty())
+    }
+
     private fun task(
         id: String,
         createdAt: Long,
         title: String? = "Title $id",
         status: TaskStatus = TaskStatus.QUEUED,
         thumbnailUrl: String? = null,
+        progress: Double = 0.0,
     ) = DownloadTask(
         id = id,
         url = "https://example.test/$id",
@@ -134,5 +186,6 @@ class DownloadRepositoryTest {
         thumbnailUrl = thumbnailUrl,
         createdAt = createdAt,
         status = status,
+        progress = progress,
     )
 }

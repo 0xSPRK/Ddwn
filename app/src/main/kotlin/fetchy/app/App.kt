@@ -20,7 +20,11 @@ import androidx.compose.material3.NavigationRail
 import androidx.compose.material3.NavigationRailItem
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -32,14 +36,21 @@ import fetchy.app.generated.resources.nav_presets
 import fetchy.app.generated.resources.nav_queue
 import fetchy.app.generated.resources.nav_settings
 import fetchy.app.generated.resources.nav_tools
+import fetchy.app.generated.resources.recovery_dialog_confirm
+import fetchy.app.generated.resources.recovery_dialog_dismiss
+import fetchy.app.generated.resources.recovery_dialog_message
+import fetchy.app.generated.resources.recovery_dialog_title
 import fetchy.app.generated.resources.screen_coming_soon
 import fetchy.app.generated.resources.screen_detail
+import fetchy.designsystem.components.FetchyAlertDialog
 import fetchy.designsystem.motion.FetchySpacing
 import fetchy.feature.add.AddScreen
 import fetchy.feature.add.AddViewModel
+import fetchy.feature.queue.QueueRecovery
 import fetchy.feature.queue.QueueScreen
 import fetchy.feature.queue.QueueViewModel
 import fetchy.feature.tools.gallery.GalleryScreen
+import fetchy.model.DownloadTask
 import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.stringResource
 import org.koin.core.Koin
@@ -47,6 +58,12 @@ import org.koin.core.Koin
 @Composable
 fun App(koin: Koin) {
     val navController = remember { FetchyNavController() }
+    val recovery: QueueRecovery = remember { koin.get() }
+    var recoverable by remember { mutableStateOf<List<DownloadTask>?>(null) }
+    LaunchedEffect(Unit) {
+        val pending: List<DownloadTask> = recovery.recover()
+        if (pending.isNotEmpty()) recoverable = pending
+    }
     Row(modifier = Modifier.fillMaxSize()) {
         NavRail(navController)
         Box(modifier = Modifier.fillMaxSize()) {
@@ -70,6 +87,21 @@ fun App(koin: Koin) {
                 }
             }
         }
+    }
+
+    val pendingRecovery: List<DownloadTask>? = recoverable
+    if (pendingRecovery != null) {
+        FetchyAlertDialog(
+            title = stringResource(Res.string.recovery_dialog_title),
+            text = stringResource(Res.string.recovery_dialog_message, pendingRecovery.size),
+            confirmLabel = stringResource(Res.string.recovery_dialog_confirm),
+            dismissLabel = stringResource(Res.string.recovery_dialog_dismiss),
+            onConfirm = {
+                recovery.resume(pendingRecovery)
+                recoverable = null
+            },
+            onDismiss = { recoverable = null },
+        )
     }
 }
 

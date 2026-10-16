@@ -44,6 +44,11 @@ SELECT count(*)
 FROM download
 WHERE status IN ('QUEUED', 'DOWNLOADING');
 
+resetInterrupted:
+UPDATE download
+SET status = 'QUEUED', progress = 0.0
+WHERE status = 'DOWNLOADING';
+
 updateStatus:
 UPDATE download
 SET status = ?, progress = ?, finished_at = ?, error_class = ?

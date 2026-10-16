@@ -10,4 +10,8 @@
     <string name="nav_gallery">Gallery</string>
     <string name="screen_coming_soon">This screen is not implemented yet</string>
     <string name="screen_detail">Details: %1$s</string>
+    <string name="recovery_dialog_title">Resume unfinished downloads?</string>
+    <string name="recovery_dialog_message">%1$d unfinished download(s) were interrupted. Resume them now?</string>
+    <string name="recovery_dialog_confirm">Resume</string>
+    <string name="recovery_dialog_dismiss">Not now</string>
 </resources>

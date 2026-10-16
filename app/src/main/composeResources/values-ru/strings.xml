@@ -10,4 +10,8 @@
     <string name="nav_gallery">Галерея</string>
     <string name="screen_coming_soon">Этот экран ещё не реализован</string>
     <string name="screen_detail">Детали: %1$s</string>
+    <string name="recovery_dialog_title">Возобновить незавершённые загрузки?</string>
+    <string name="recovery_dialog_message">Прервано незавершённых загрузок: %1$d. Возобновить их сейчас?</string>
+    <string name="recovery_dialog_confirm">Возобновить</string>
+    <string name="recovery_dialog_dismiss">Не сейчас</string>
 </resources>

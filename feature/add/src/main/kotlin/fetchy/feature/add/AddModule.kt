@@ -2,6 +2,7 @@ package fetchy.feature.add
 
 import fetchy.data.DownloadRepository
 import fetchy.ytdlp.ArgvBuilder
+import fetchy.ytdlp.DownloadScheduler
 import fetchy.ytdlp.YtdlpProcessRunner
 import fetchy.ytdlp.binary.BinaryManager
 import fetchy.ytdlp.util.DefaultAppPathsProvider
@@ -19,7 +20,11 @@ val addModule: Module = module {
 
     single<DownloadCreator> {
         val repository: DownloadRepository = get()
-        DownloadCreator { task -> repository.create(task) }
+        val scheduler: DownloadScheduler = get()
+        DownloadCreator { task ->
+            repository.create(task)
+            scheduler.submit(task)
+        }
     }
 
     factory {

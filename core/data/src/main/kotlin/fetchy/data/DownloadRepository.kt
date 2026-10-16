@@ -68,6 +68,11 @@ class DownloadRepository(
         withContext(dispatcher) { queries.updateProgress(progress, id) }
     }
 
+    suspend fun requeue(): List<DownloadTask> = withContext(dispatcher) {
+        queries.resetInterrupted()
+        queries.selectActive().executeAsList().map(Download::toModel)
+    }
+
     suspend fun delete(id: String) {
         withContext(dispatcher) { queries.deleteById(id) }
     }
