@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -19,6 +20,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
@@ -32,6 +35,7 @@ import fetchy.feature.queue.formatSpeed
 import fetchy.feature.queue.generated.resources.Res
 import fetchy.feature.queue.generated.resources.queue_eta
 import fetchy.feature.queue.generated.resources.queue_playlist_item
+import fetchy.feature.queue.generated.resources.queue_select_task
 import fetchy.feature.queue.generated.resources.queue_speed
 import fetchy.feature.queue.generated.resources.queue_status_cancelled
 import fetchy.feature.queue.generated.resources.queue_status_completed
@@ -45,6 +49,11 @@ import org.jetbrains.compose.resources.stringResource
 @Composable
 fun TaskCard(
     state: QueueTaskUiState,
+    selected: Boolean,
+    onToggleSelection: () -> Unit,
+    onCancel: () -> Unit,
+    onRetry: () -> Unit,
+    onRestart: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     FetchyOutlinedCard(modifier = modifier.fillMaxWidth()) {
@@ -52,6 +61,13 @@ fun TaskCard(
             modifier = Modifier.fillMaxWidth().padding(FetchySpacing.md),
             verticalAlignment = Alignment.CenterVertically,
         ) {
+            val selectDescription: String = stringResource(Res.string.queue_select_task, state.title)
+            Checkbox(
+                checked = selected,
+                onCheckedChange = { onToggleSelection() },
+                modifier = Modifier.semantics { contentDescription = selectDescription },
+            )
+            Spacer(Modifier.width(FetchySpacing.sm))
             Thumbnail(url = state.thumbnailUrl)
             Spacer(Modifier.width(FetchySpacing.md))
             Column(modifier = Modifier.weight(1f)) {
@@ -69,6 +85,19 @@ fun TaskCard(
             }
             Spacer(Modifier.width(FetchySpacing.md))
             FetchyAssistChip(label = stringResource(statusLabel(state.status)), onClick = {})
+        }
+        if (hasTaskActions(state.status)) {
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(start = FetchySpacing.md, end = FetchySpacing.md, bottom = FetchySpacing.sm),
+                horizontalArrangement = Arrangement.End,
+            ) {
+                TaskActions(
+                    status = state.status,
+                    onCancel = onCancel,
+                    onRetry = onRetry,
+                    onRestart = onRestart,
+                )
+            }
         }
     }
 }

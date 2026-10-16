@@ -33,6 +33,12 @@ FROM download
 WHERE status IN ('QUEUED', 'DOWNLOADING')
 ORDER BY created_at ASC;
 
+selectIncomplete:
+SELECT *
+FROM download
+WHERE status != 'COMPLETED'
+ORDER BY created_at ASC;
+
 countActive:
 SELECT count(*)
 FROM download

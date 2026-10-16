@@ -319,6 +319,86 @@ class DownloadSchedulerTest {
     }
 
     @Test
+    fun `restart of an inactive task submits and runs it`() = runTest {
+        val fixture = Fixture(this)
+        every { fixture.runner.run(any()) } returns flowOf(ProgressEvent.Completed(0))
+        val scheduler = fixture.scheduler()
+
+        scheduler.start()
+        assertTrue(scheduler.restart(task("a")))
+        advanceUntilIdle()
+
+        assertEquals(1, fixture.store.completed.size)
+        verify(exactly = 1) { fixture.runner.run(any()) }
+        scheduler.close()
+        advanceUntilIdle()
+    }
+
+    @Test
+    fun `restart of a running task cancels it and runs it again`() = runTest {
+        val fixture = Fixture(this)
+        val gate = CompletableDeferred<Unit>()
+        var calls = 0
+        every { fixture.runner.run(any()) } answers {
+            calls++
+            if (calls == 1) {
+                flow {
+                    emit(ProgressEvent.Progress(progress(0.5)))
+                    gate.await()
+                }
+            } else {
+                flowOf(ProgressEvent.Completed(0))
+            }
+        }
+        val scheduler = fixture.scheduler(maxParallel = 1)
+
+        scheduler.start()
+        scheduler.submit(task("a"))
+        advanceUntilIdle()
+
+        assertTrue(scheduler.restart(task("a")))
+        advanceUntilIdle()
+
+        assertEquals(2, calls)
+        assertEquals(1, fixture.store.cancelled.size)
+        assertEquals(1, fixture.store.completed.size)
+        scheduler.close()
+        advanceUntilIdle()
+    }
+
+    @Test
+    fun `restart of a queued task cancels the queued run and executes the restart`() = runTest {
+        val fixture = Fixture(this)
+        every { fixture.runner.run(any()) } returns flowOf(ProgressEvent.Completed(0))
+        val scheduler = fixture.scheduler(maxParallel = 1)
+
+        scheduler.submit(task("a"))
+        assertTrue(scheduler.restart(task("a")))
+        scheduler.start()
+        advanceUntilIdle()
+
+        assertEquals(1, fixture.store.cancelled.size)
+        assertEquals(1, fixture.store.completed.size)
+        assertEquals("a", fixture.store.completed.single().id)
+        scheduler.close()
+        advanceUntilIdle()
+    }
+
+    @Test
+    fun `restart after close is rejected`() = runTest {
+        val fixture = Fixture(this)
+        every { fixture.runner.run(any()) } returns flowOf(ProgressEvent.Completed(0))
+        val scheduler = fixture.scheduler()
+
+        scheduler.start()
+        scheduler.close()
+
+        assertFalse(scheduler.restart(task("a")))
+        advanceUntilIdle()
+        verify(exactly = 0) { fixture.runner.run(any()) }
+    }
+
+    @Test
     fun `progress fraction is persisted`() = runTest {
         val fixture = Fixture(this)
         every { fixture.runner.run(any()) } returns

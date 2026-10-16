@@ -12,4 +12,14 @@
     <string name="queue_speed">%1$s/с</string>
     <string name="queue_eta">Осталось %1$s</string>
     <string name="queue_playlist_item">Элемент %1$d</string>
+    <string name="queue_counts">Активных: %1$d · В очереди: %2$d</string>
+    <string name="queue_action_cancel">Отменить</string>
+    <string name="queue_action_retry">Повторить</string>
+    <string name="queue_action_restart">Стоп и заново</string>
+    <string name="queue_cancel_dialog_title">Отменить загрузку?</string>
+    <string name="queue_cancel_dialog_message">Частичный файл останется на диске, загрузку можно будет возобновить позже.</string>
+    <string name="queue_cancel_dialog_confirm">Отменить загрузку</string>
+    <string name="queue_cancel_dialog_dismiss">Оставить</string>
+    <string name="queue_cancel_selected">Отменить выбранные (%1$d)</string>
+    <string name="queue_select_task">Выбрать «%1$s»</string>
 </resources>

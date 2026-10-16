@@ -90,6 +90,19 @@ class DownloadRepositoryTest {
     }
 
     @Test
+    fun observeIncompleteKeepsFailedAndCancelledButDropsCompleted() = runTest {
+        repository.create(task("queued", createdAt = 1L, status = TaskStatus.QUEUED))
+        repository.create(task("running", createdAt = 2L, status = TaskStatus.DOWNLOADING))
+        repository.create(task("failed", createdAt = 3L, status = TaskStatus.FAILED))
+        repository.create(task("cancelled", createdAt = 4L, status = TaskStatus.CANCELLED))
+        repository.create(task("done", createdAt = 5L, status = TaskStatus.COMPLETED))
+
+        val ids = repository.observeIncomplete().first().map { it.id }
+
+        assertEquals(listOf("queued", "running", "failed", "cancelled"), ids)
+    }
+
+    @Test
     fun activeCountCountsQueuedAndDownloading() = runTest {
         repository.create(task("queued", createdAt = 1L, status = TaskStatus.QUEUED))
         repository.create(task("running", createdAt = 2L, status = TaskStatus.DOWNLOADING))

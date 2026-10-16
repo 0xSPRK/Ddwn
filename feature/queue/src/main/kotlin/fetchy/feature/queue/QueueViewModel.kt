@@ -3,6 +3,7 @@ package fetchy.feature.queue
 import fetchy.data.DownloadRepository
 import fetchy.model.DownloadTask
 import fetchy.model.ProgressInfo
+import fetchy.model.TaskStatus
 import fetchy.ytdlp.DownloadScheduler
 import fetchy.ytdlp.SchedulerEvent
 import kotlinx.coroutines.CoroutineScope
@@ -25,10 +26,14 @@ class QueueViewModel(
 
     private val live: MutableStateFlow<Map<String, ProgressInfo>> = MutableStateFlow(emptyMap())
 
+    private val selected: MutableStateFlow<Set<String>> = MutableStateFlow(emptySet())
+
     val tasks: StateFlow<List<QueueTaskUiState>> =
-        combine(repository.observeActive(), live) { rows, liveMap ->
+        combine(repository.observeIncomplete(), live) { rows, liveMap ->
             rows.map { row -> row.toUiState(liveMap[row.id]) }
         }.stateIn(scope, SharingStarted.Eagerly, emptyList())
+
+    val selectedIds: StateFlow<Set<String>> = selected
 
     init {
         scope.launch {
@@ -47,8 +52,39 @@ class QueueViewModel(
         }
     }
 
+    fun toggleSelection(id: String) {
+        selected.update { current -> if (id in current) current - id else current + id }
+    }
+
+    fun clearSelection() {
+        selected.value = emptySet()
+    }
+
     fun cancel(id: String) {
         scheduler.cancel(id)
+    }
+
+    fun retry(id: String) {
+        scope.launch {
+            val task: DownloadTask = repository.get(id) ?: return@launch
+            if (task.status != TaskStatus.FAILED && task.status != TaskStatus.CANCELLED) return@launch
+            repository.updateStatus(id, TaskStatus.QUEUED, 0.0, null, null)
+            scheduler.submit(task)
+        }
+    }
+
+    fun restart(id: String) {
+        scope.launch {
+            val task: DownloadTask = repository.get(id) ?: return@launch
+            repository.updateStatus(id, TaskStatus.QUEUED, 0.0, null, null)
+            scheduler.restart(task)
+        }
+    }
+
+    fun cancelSelected() {
+        val ids: Set<String> = selected.value
+        ids.forEach { id -> scheduler.cancel(id) }
+        clearSelection()
     }
 
     override fun close() {
@@ -56,7 +92,7 @@ class QueueViewModel(
     }
 }
 
-private fun DownloadTask.toUiState(info: ProgressInfo?): QueueTaskUiState = QueueTaskUiState(
+internal fun DownloadTask.toUiState(info: ProgressInfo?): QueueTaskUiState = QueueTaskUiState(
     id = id,
     title = title ?: url,
     url = url,

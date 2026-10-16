@@ -12,4 +12,14 @@
     <string name="queue_speed">%1$s/s</string>
     <string name="queue_eta">ETA %1$s</string>
     <string name="queue_playlist_item">Item %1$d</string>
+    <string name="queue_counts">%1$d active · %2$d queued</string>
+    <string name="queue_action_cancel">Cancel</string>
+    <string name="queue_action_retry">Retry</string>
+    <string name="queue_action_restart">Stop and redo</string>
+    <string name="queue_cancel_dialog_title">Cancel download?</string>
+    <string name="queue_cancel_dialog_message">The partial file stays on disk and the download can be resumed later.</string>
+    <string name="queue_cancel_dialog_confirm">Cancel download</string>
+    <string name="queue_cancel_dialog_dismiss">Keep</string>
+    <string name="queue_cancel_selected">Cancel selected (%1$d)</string>
+    <string name="queue_select_task">Select %1$s</string>
 </resources>

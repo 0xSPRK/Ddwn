@@ -59,6 +59,7 @@ class DownloadScheduler(
     private val queuedIds: MutableSet<String> = HashSet()
     private val cancelledIds: MutableSet<String> = HashSet()
     private val runningJobs: MutableMap<String, Job> = HashMap()
+    private val restartRequests: MutableMap<String, DownloadTask> = HashMap()
 
     private val started: AtomicBoolean = AtomicBoolean(false)
     private val closed: AtomicBoolean = AtomicBoolean(false)
@@ -98,6 +99,22 @@ class DownloadScheduler(
         job?.cancel()
     }
 
+    fun restart(task: DownloadTask): Boolean {
+        if (closed.get()) return false
+        val active: Boolean =
+            synchronized(lock) {
+                if (task.id in queuedIds || task.id in runningJobs) {
+                    restartRequests[task.id] = task
+                    true
+                } else {
+                    false
+                }
+            }
+        if (!active) return submit(task)
+        cancel(task.id)
+        return true
+    }
+
     override fun close() {
         if (!closed.compareAndSet(false, true)) return
         queue.close()
@@ -106,39 +123,49 @@ class DownloadScheduler(
 
     private suspend fun worker() {
         for (task in queue) {
-            val began: AtomicBoolean = AtomicBoolean(false)
-            var cancelQueued: Boolean = false
-            val job: Job? =
-                synchronized(lock) {
-                    if (cancelledIds.remove(task.id)) {
-                        queuedIds.remove(task.id)
-                        cancelQueued = true
-                        null
-                    } else if (queuedIds.remove(task.id)) {
-                        val launched: Job =
-                            scope.launch(start = CoroutineStart.LAZY) {
-                                began.set(true)
-                                execute(task)
-                            }
-                        runningJobs[task.id] = launched
-                        launched
-                    } else {
-                        null
-                    }
-                }
-
-            if (cancelQueued) {
-                recordCancelled(task)
-                continue
-            }
-            if (job == null) continue
-
-            job.start()
-            job.join()
-            val cancelledBeforeRun: Boolean = job.isCancelled && !began.get()
-            synchronized(lock) { runningJobs.remove(task.id) }
-            if (cancelledBeforeRun) recordCancelled(task)
+            handle(task)
+            requeueIfRequested(task.id)
         }
+    }
+
+    private suspend fun handle(task: DownloadTask) {
+        val began: AtomicBoolean = AtomicBoolean(false)
+        var cancelQueued: Boolean = false
+        val job: Job? =
+            synchronized(lock) {
+                if (cancelledIds.remove(task.id)) {
+                    queuedIds.remove(task.id)
+                    cancelQueued = true
+                    null
+                } else if (queuedIds.remove(task.id)) {
+                    val launched: Job =
+                        scope.launch(start = CoroutineStart.LAZY) {
+                            began.set(true)
+                            execute(task)
+                        }
+                    runningJobs[task.id] = launched
+                    launched
+                } else {
+                    null
+                }
+            }
+
+        if (cancelQueued) {
+            recordCancelled(task)
+            return
+        }
+        if (job == null) return
+
+        job.start()
+        job.join()
+        val cancelledBeforeRun: Boolean = job.isCancelled && !began.get()
+        synchronized(lock) { runningJobs.remove(task.id) }
+        if (cancelledBeforeRun) recordCancelled(task)
+    }
+
+    private fun requeueIfRequested(id: String) {
+        val restart: DownloadTask = synchronized(lock) { restartRequests.remove(id) } ?: return
+        if (!closed.get()) submit(restart)
     }
 
     private suspend fun execute(task: DownloadTask) {

@@ -26,6 +26,9 @@ class DownloadRepository(
     fun observeActive(): Flow<List<DownloadTask>> =
         queries.selectActive().asFlow().mapToList(dispatcher).map { rows -> rows.map(Download::toModel) }
 
+    fun observeIncomplete(): Flow<List<DownloadTask>> =
+        queries.selectIncomplete().asFlow().mapToList(dispatcher).map { rows -> rows.map(Download::toModel) }
+
     suspend fun get(id: String): DownloadTask? = withContext(dispatcher) {
         queries.selectById(id).executeAsOneOrNull()?.toModel()
     }

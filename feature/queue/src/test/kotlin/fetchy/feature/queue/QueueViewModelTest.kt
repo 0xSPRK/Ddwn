@@ -143,11 +143,135 @@ class QueueViewModelTest {
         harness.viewModel.close()
     }
 
+    @Test
+    fun `failed tasks stay visible in the queue`() = runTest {
+        val repository = repository()
+        repository.create(task("a", status = TaskStatus.FAILED))
+        val harness = createHarness(repository)
+
+        harness.viewModel.tasks.test {
+            assertEquals(listOf("a"), awaitNonEmpty().map { it.id })
+            cancelAndIgnoreRemainingEvents()
+        }
+        harness.viewModel.close()
+    }
+
+    @Test
+    fun `completed tasks are hidden from the queue`() = runTest {
+        val repository = repository()
+        repository.create(task("a", status = TaskStatus.COMPLETED))
+        val harness = createHarness(repository)
+
+        harness.viewModel.tasks.test {
+            assertEquals(emptyList<QueueTaskUiState>(), awaitItem())
+            cancelAndIgnoreRemainingEvents()
+        }
+        harness.viewModel.close()
+    }
+
+    @Test
+    fun `retry resets a failed task to queued and submits it`() = runTest {
+        val repository = repository()
+        repository.create(task("a", status = TaskStatus.FAILED, progress = 0.3))
+        val harness = createHarness(repository)
+
+        harness.viewModel.retry("a")
+
+        verify(exactly = 1) { harness.scheduler.submit(match { it.id == "a" }) }
+        val stored = repository.get("a")
+        assertEquals(TaskStatus.QUEUED, stored?.status)
+        assertEquals(0.0, stored?.progress)
+        harness.viewModel.close()
+    }
+
+    @Test
+    fun `retry leaves a running task untouched`() = runTest {
+        val repository = repository()
+        repository.create(task("a", status = TaskStatus.DOWNLOADING, progress = 0.4))
+        val harness = createHarness(repository)
+
+        harness.viewModel.retry("a")
+
+        verify(exactly = 0) { harness.scheduler.submit(any()) }
+        assertEquals(TaskStatus.DOWNLOADING, repository.get("a")?.status)
+        harness.viewModel.close()
+    }
+
+    @Test
+    fun `retry works for a cancelled task`() = runTest {
+        val repository = repository()
+        repository.create(task("a", status = TaskStatus.CANCELLED))
+        val harness = createHarness(repository)
+
+        harness.viewModel.retry("a")
+
+        verify(exactly = 1) { harness.scheduler.submit(match { it.id == "a" }) }
+        assertEquals(TaskStatus.QUEUED, repository.get("a")?.status)
+        harness.viewModel.close()
+    }
+
+    @Test
+    fun `restart delegates to scheduler and resets progress`() = runTest {
+        val repository = repository()
+        repository.create(task("a", status = TaskStatus.DOWNLOADING, progress = 0.5))
+        val harness = createHarness(repository)
+
+        harness.viewModel.restart("a")
+
+        verify(exactly = 1) { harness.scheduler.restart(match { it.id == "a" }) }
+        assertEquals(0.0, repository.get("a")?.progress)
+        harness.viewModel.close()
+    }
+
+    @Test
+    fun `toggle selection adds and removes an id`() = runTest {
+        val harness = createHarness(repository())
+
+        harness.viewModel.toggleSelection("a")
+        assertEquals(setOf("a"), harness.viewModel.selectedIds.value)
+
+        harness.viewModel.toggleSelection("a")
+        assertEquals(emptySet<String>(), harness.viewModel.selectedIds.value)
+        harness.viewModel.close()
+    }
+
+    @Test
+    fun `clear selection empties the selection`() = runTest {
+        val harness = createHarness(repository())
+        harness.viewModel.toggleSelection("a")
+        harness.viewModel.toggleSelection("b")
+
+        harness.viewModel.clearSelection()
+
+        assertEquals(emptySet<String>(), harness.viewModel.selectedIds.value)
+        harness.viewModel.close()
+    }
+
+    @Test
+    fun `cancel selected cancels every selected id and clears selection`() = runTest {
+        val repository = repository()
+        repository.create(task("a"))
+        repository.create(task("b"))
+        val harness = createHarness(repository)
+        harness.viewModel.toggleSelection("a")
+        harness.viewModel.toggleSelection("b")
+
+        harness.viewModel.cancelSelected()
+
+        verify(exactly = 1) { harness.scheduler.cancel("a") }
+        verify(exactly = 1) { harness.scheduler.cancel("b") }
+        assertEquals(emptySet<String>(), harness.viewModel.selectedIds.value)
+        harness.viewModel.close()
+    }
+
     private data class Harness(
         val viewModel: QueueViewModel,
         val scheduler: DownloadScheduler,
         val events: MutableSharedFlow<SchedulerEvent>,
     )
+
+    private fun TestScope.repository(): DownloadRepository =
+        DownloadRepository(FetchyDatabaseFactory.inMemory(), UnconfinedTestDispatcher(testScheduler))
 
     private fun TestScope.createHarness(
         repository: DownloadRepository,
@@ -156,6 +280,8 @@ class QueueViewModelTest {
         val scheduler = mockk<DownloadScheduler>()
         every { scheduler.events } returns events
         every { scheduler.cancel(any()) } just Runs
+        every { scheduler.submit(any()) } returns true
+        every { scheduler.restart(any()) } returns true
         val scope = CoroutineScope(UnconfinedTestDispatcher(testScheduler) + SupervisorJob())
         return Harness(QueueViewModel(repository, scheduler, scope), scheduler, events)
     }
