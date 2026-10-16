@@ -10,7 +10,9 @@ import org.junit.jupiter.api.Test
 
 class RepositoryTaskStateStoreTest {
 
-    private val repository = DownloadRepository(FetchyDatabaseFactory.inMemory())
+    private val database = FetchyDatabaseFactory.inMemory()
+    private val repository = DownloadRepository(database)
+    private val history = SqlDelightHistoryRepository(database)
     private val store = RepositoryTaskStateStore(repository)
 
     @Test
@@ -81,6 +83,17 @@ class RepositoryTaskStateStoreTest {
         assertEquals(TaskStatus.CANCELLED, updated.status)
         assertEquals(0.25, updated.progress, 1e-9)
         assertEquals(999L, updated.finishedAt)
+    }
+
+    @Test
+    fun markCompletedArchivesTaskIntoHistory() = runTest {
+        repository.create(task("a", status = TaskStatus.DOWNLOADING))
+
+        store.markCompleted("a", progress = 1.0, finishedAt = 555L)
+
+        val archived = requireNotNull(history.get("a"))
+        assertEquals(TaskStatus.COMPLETED, archived.status)
+        assertEquals(555L, archived.finishedAt)
     }
 
     private fun task(id: String, status: TaskStatus = TaskStatus.QUEUED): DownloadTask =

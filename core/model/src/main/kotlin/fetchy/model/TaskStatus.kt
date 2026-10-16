@@ -6,4 +6,8 @@ enum class TaskStatus {
     COMPLETED,
     FAILED,
     CANCELLED,
+    ;
+
+    val isTerminal: Boolean
+        get() = this == COMPLETED || this == FAILED || this == CANCELLED
 }

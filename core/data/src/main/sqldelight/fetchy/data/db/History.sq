@@ -18,6 +18,12 @@ insert:
 INSERT INTO history(id, url, title, format_args_json, preset_id, status, progress, created_at, finished_at, error_class, log_path, file_path, duration_ms)
 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
 
+archiveFromDownload:
+INSERT OR REPLACE INTO history(id, url, title, format_args_json, preset_id, status, progress, created_at, finished_at, error_class, log_path, file_path, duration_ms)
+SELECT id, url, title, format_args_json, preset_id, status, progress, created_at, finished_at, error_class, log_path, NULL, NULL
+FROM download
+WHERE id = :id;
+
 selectById:
 SELECT *
 FROM history

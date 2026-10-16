@@ -60,7 +60,12 @@ class DownloadRepository(
         finishedAt: Long? = null,
     ) {
         withContext(dispatcher) {
-            queries.updateStatus(status.name, progress, finishedAt, errorClass?.name, id)
+            database.transaction {
+                queries.updateStatus(status.name, progress, finishedAt, errorClass?.name, id)
+                if (status.isTerminal) {
+                    database.historyQueries.archiveFromDownload(id)
+                }
+            }
         }
     }
 

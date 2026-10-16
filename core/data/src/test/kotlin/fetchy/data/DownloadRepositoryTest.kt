@@ -12,7 +12,9 @@ import org.junit.jupiter.api.Test
 
 class DownloadRepositoryTest {
 
-    private val repository = DownloadRepository(FetchyDatabaseFactory.inMemory())
+    private val database = FetchyDatabaseFactory.inMemory()
+    private val repository = DownloadRepository(database)
+    private val history = SqlDelightHistoryRepository(database)
 
     @Test
     fun createThenGetReturnsTask() = runTest {
@@ -75,6 +77,47 @@ class DownloadRepositoryTest {
         val updated = requireNotNull(repository.get("a"))
         assertEquals(0.75, updated.progress, 1e-9)
         assertEquals(TaskStatus.DOWNLOADING, updated.status)
+    }
+
+    @Test
+    fun terminalStatusArchivesTaskIntoHistory() = runTest {
+        repository.create(task("a", createdAt = 1L, title = "Alpha"))
+
+        repository.updateStatus(
+            id = "a",
+            status = TaskStatus.FAILED,
+            progress = 0.3,
+            errorClass = ErrorClass.NETWORK,
+            finishedAt = 99L,
+        )
+
+        val archived = requireNotNull(history.get("a"))
+        assertEquals(TaskStatus.FAILED, archived.status)
+        assertEquals("Alpha", archived.title)
+        assertEquals(0.3, archived.progress, 1e-9)
+        assertEquals(ErrorClass.NETWORK, archived.errorClass)
+        assertEquals(99L, archived.finishedAt)
+    }
+
+    @Test
+    fun nonTerminalStatusIsNotArchived() = runTest {
+        repository.create(task("a", createdAt = 1L))
+
+        repository.updateStatus(id = "a", status = TaskStatus.DOWNLOADING, progress = 0.4)
+
+        assertNull(history.get("a"))
+        assertEquals(0L, history.count())
+    }
+
+    @Test
+    fun repeatedTerminalStatusReplacesHistoryEntry() = runTest {
+        repository.create(task("a", createdAt = 1L))
+
+        repository.updateStatus(id = "a", status = TaskStatus.FAILED, progress = 0.2, finishedAt = 1L)
+        repository.updateStatus(id = "a", status = TaskStatus.COMPLETED, progress = 1.0, finishedAt = 2L)
+
+        assertEquals(1L, history.count())
+        assertEquals(TaskStatus.COMPLETED, history.get("a")?.status)
     }
 
     @Test
