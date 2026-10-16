@@ -36,12 +36,12 @@ import fetchy.feature.history.generated.resources.history_detail_file
 import fetchy.feature.history.generated.resources.history_detail_file_none
 import fetchy.feature.history.generated.resources.history_detail_finished
 import fetchy.feature.history.generated.resources.history_detail_log
+import fetchy.feature.history.generated.resources.history_detail_log_error
 import fetchy.feature.history.generated.resources.history_detail_log_missing
 import fetchy.feature.history.generated.resources.history_detail_not_found
 import fetchy.feature.history.generated.resources.history_detail_open_folder
 import fetchy.feature.history.generated.resources.history_detail_show_log
 import fetchy.feature.history.generated.resources.history_detail_status
-import fetchy.feature.history.generated.resources.history_detail_title
 import fetchy.feature.history.generated.resources.history_detail_url
 import fetchy.feature.history.generated.resources.history_error_class
 import fetchy.model.ErrorClass
@@ -182,6 +182,12 @@ fun HistoryDetailScreen(
                         text = stringResource(Res.string.history_detail_show_log),
                         onClick = viewModel::showLog,
                         modifier = Modifier.fillMaxWidth(),
+                    )
+
+                    state.logError -> Text(
+                        text = stringResource(Res.string.history_detail_log_error),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.error,
                     )
 
                     else -> LogView(

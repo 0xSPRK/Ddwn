@@ -22,7 +22,6 @@
     <string name="history_delete_confirm">Delete</string>
     <string name="history_delete_dismiss">Cancel</string>
     <string name="history_detail_back">Back</string>
-    <string name="history_detail_title">Download details</string>
     <string name="history_detail_url">URL</string>
     <string name="history_detail_status">Status</string>
     <string name="history_detail_created">Created</string>
@@ -36,6 +35,7 @@
     <string name="history_detail_error">Error</string>
     <string name="history_detail_log">Log</string>
     <string name="history_detail_log_missing">No log was recorded for this download.</string>
+    <string name="history_detail_log_error">The log could not be read.</string>
     <string name="history_detail_log_load_more">Show more</string>
     <string name="history_detail_show_log">Show log</string>
     <string name="history_detail_not_found">This entry no longer exists.</string>

@@ -22,7 +22,6 @@
     <string name="history_delete_confirm">Удалить</string>
     <string name="history_delete_dismiss">Отмена</string>
     <string name="history_detail_back">Назад</string>
-    <string name="history_detail_title">Детали загрузки</string>
     <string name="history_detail_url">Ссылка</string>
     <string name="history_detail_status">Статус</string>
     <string name="history_detail_created">Создано</string>
@@ -36,6 +35,7 @@
     <string name="history_detail_error">Ошибка</string>
     <string name="history_detail_log">Лог</string>
     <string name="history_detail_log_missing">Для этой загрузки лог не записывался.</string>
+    <string name="history_detail_log_error">Не удалось прочитать лог.</string>
     <string name="history_detail_log_load_more">Показать ещё</string>
     <string name="history_detail_show_log">Показать лог</string>
     <string name="history_detail_not_found">Этой записи больше нет.</string>

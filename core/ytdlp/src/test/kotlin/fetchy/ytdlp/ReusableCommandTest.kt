@@ -9,6 +9,19 @@ class ReusableCommandTest {
 
     private val url = "https://example.test/video"
 
+    private val defaultPrefix: List<String> =
+        listOf("yt-dlp", "--ignore-config", "--newline", "--progress-template", ArgvBuilder.PROGRESS_TEMPLATE)
+
+    @Test
+    fun `includes the always-on options so the command reproduces the download`() {
+        val argv = CommandStringCodec.parse(
+            maskedReusableCommand("[]", url, ShellFamily.BASH),
+            ShellFamily.BASH,
+        )
+
+        assertEquals(defaultPrefix + url, argv)
+    }
+
     @Test
     fun `masks secret option values`() {
         val json = """["--cookies","cookies.txt","-f","best"]"""
@@ -18,7 +31,7 @@ class ReusableCommandTest {
             ShellFamily.BASH,
         )
 
-        assertEquals(listOf("yt-dlp", "--cookies", CommandStringCodec.MASK, "-f", "best", url), argv)
+        assertEquals(defaultPrefix + listOf("--cookies", CommandStringCodec.MASK, "-f", "best", url), argv)
     }
 
     @Test
@@ -30,13 +43,13 @@ class ReusableCommandTest {
     }
 
     @Test
-    fun `falls back to just the tool and url when format args are not valid json`() {
+    fun `falls back to no user options when format args are not valid json`() {
         val argv = CommandStringCodec.parse(
             maskedReusableCommand("not-json", url, ShellFamily.BASH),
             ShellFamily.BASH,
         )
 
-        assertEquals(listOf("yt-dlp", url), argv)
+        assertEquals(defaultPrefix + url, argv)
     }
 
     @Test
@@ -46,6 +59,6 @@ class ReusableCommandTest {
             ShellFamily.BASH,
         )
 
-        assertEquals(listOf("yt-dlp", url), argv)
+        assertEquals(defaultPrefix + url, argv)
     }
 }

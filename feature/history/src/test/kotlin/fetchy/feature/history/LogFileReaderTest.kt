@@ -54,6 +54,36 @@ class LogFileReaderTest {
         assertFalse(slice.truncated)
     }
 
+    @Test
+    fun `reads a file exactly at the limit as complete`() {
+        val file = write("log.txt", "abcde")
+
+        val slice = reader.read(file.toString(), 5L)
+
+        assertEquals("abcde", slice.text)
+        assertFalse(slice.truncated)
+    }
+
+    @Test
+    fun `decodes invalid utf8 without throwing`() {
+        val file = directory.resolve("log.txt")
+        Files.write(file, byteArrayOf(0x41, 0xFF.toByte(), 0xFE.toByte(), 0x42))
+
+        val slice = reader.read(file.toString(), 1_000_000L)
+
+        assertFalse(slice.truncated)
+        assertTrue(slice.text.startsWith("A"))
+        assertTrue(slice.text.endsWith("B"))
+    }
+
+    @Test
+    fun `returns an empty slice for a directory`() {
+        val slice = reader.read(directory.toString(), 1024L)
+
+        assertEquals("", slice.text)
+        assertFalse(slice.truncated)
+    }
+
     private fun write(name: String, content: String): Path {
         val file = directory.resolve(name)
         Files.writeString(file, content)

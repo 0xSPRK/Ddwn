@@ -10,4 +10,5 @@ data class HistoryDetailUiState(
     val logLoading: Boolean = false,
     val logTruncated: Boolean = false,
     val logExpanded: Boolean = false,
+    val logError: Boolean = false,
 )

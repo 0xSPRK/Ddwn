@@ -131,6 +131,32 @@ class HistoryDetailViewModelTest {
     }
 
     @Test
+    fun `clears loading when the repository fails`() = runTest {
+        val repository = FakeHistoryRepository(emptyList(), getError = IllegalStateException("boom"))
+        val viewModel = createViewModel(repository, id = "a")
+
+        val state = viewModel.state.value
+        assertFalse(state.loading)
+        assertNull(state.entry)
+        viewModel.close()
+    }
+
+    @Test
+    fun `reports a log read failure`() = runTest {
+        val logReader = FakeLogReader(failure = IllegalStateException("boom"))
+        val repository = FakeHistoryRepository(listOf(entry(id = "a", logPath = "/logs/a.log")))
+        val viewModel = createViewModel(repository, id = "a", logReader = logReader)
+
+        viewModel.showLog()
+
+        val state = viewModel.state.value
+        assertFalse(state.logLoading)
+        assertTrue(state.logError)
+        assertNull(state.logText)
+        viewModel.close()
+    }
+
+    @Test
     fun `show log does nothing without a log path`() = runTest {
         val logReader = FakeLogReader()
         val repository = FakeHistoryRepository(listOf(entry(id = "a")))
@@ -192,6 +218,7 @@ class HistoryDetailViewModelTest {
 
     private class FakeHistoryRepository(
         private val entries: List<HistoryEntry>,
+        private val getError: Throwable? = null,
     ) : HistoryRepository {
 
         override fun observeAll(): Flow<List<HistoryEntry>> = MutableStateFlow(entries)
@@ -205,7 +232,10 @@ class HistoryDetailViewModelTest {
             offset: Long,
         ): Flow<List<HistoryEntry>> = MutableStateFlow(entries)
 
-        override suspend fun get(id: String): HistoryEntry? = entries.firstOrNull { it.id == id }
+        override suspend fun get(id: String): HistoryEntry? {
+            getError?.let { throw it }
+            return entries.firstOrNull { it.id == id }
+        }
 
         override suspend fun insert(entry: HistoryEntry) = Unit
 
@@ -227,11 +257,13 @@ class HistoryDetailViewModelTest {
 
     private class FakeLogReader(
         private val slice: (String, Long) -> LogSlice = { _, _ -> LogSlice(text = "log", truncated = false) },
+        private val failure: Throwable? = null,
     ) : LogFileReader {
         val calls: MutableList<Pair<String, Long>> = mutableListOf()
 
         override fun read(path: String, limitBytes: Long): LogSlice {
             calls += path to limitBytes
+            failure?.let { throw it }
             return slice(path, limitBytes)
         }
     }

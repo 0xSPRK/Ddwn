@@ -8,8 +8,10 @@ import fetchy.ytdlp.ShellFamily
 import fetchy.ytdlp.maskedReusableCommand
 import java.nio.file.Path
 import kotlin.coroutines.CoroutineContext
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -37,10 +39,17 @@ class HistoryDetailViewModel(
 
     private var entry: HistoryEntry? = null
     private var logLimit: Long = logLimitBytes
+    private var logJob: Job? = null
 
     init {
         scope.launch {
-            val loaded: HistoryEntry? = repository.get(id)
+            val loaded: HistoryEntry? = try {
+                repository.get(id)
+            } catch (cancellation: CancellationException) {
+                throw cancellation
+            } catch (error: Exception) {
+                null
+            }
             entry = loaded
             val isDrm: Boolean = loaded?.errorClass == ErrorClass.DRM_PROTECTED
             mutableState.update {
@@ -65,7 +74,7 @@ class HistoryDetailViewModel(
 
     fun openFolder() {
         val filePath: String = entry?.filePath ?: return
-        val directory: Path = Path.of(filePath).parent ?: return
+        val directory: Path = runCatching { Path.of(filePath).parent }.getOrNull() ?: return
         scope.launch {
             withContext(ioDispatcher) { opener.open(directory) }
         }
@@ -74,9 +83,17 @@ class HistoryDetailViewModel(
     private fun loadLog(limit: Long) {
         val path: String = entry?.logPath ?: return
         logLimit = limit
-        scope.launch {
-            mutableState.update { it.copy(logExpanded = true, logLoading = true) }
-            val slice: LogSlice = withContext(ioDispatcher) { logReader.read(path, currentLimit()) }
+        logJob?.cancel()
+        logJob = scope.launch {
+            mutableState.update { it.copy(logExpanded = true, logLoading = true, logError = false) }
+            val slice: LogSlice = try {
+                withContext(ioDispatcher) { logReader.read(path, limit) }
+            } catch (cancellation: CancellationException) {
+                throw cancellation
+            } catch (error: Exception) {
+                mutableState.update { it.copy(logLoading = false, logError = true) }
+                return@launch
+            }
             mutableState.update {
                 it.copy(
                     logText = slice.text,
@@ -86,8 +103,6 @@ class HistoryDetailViewModel(
             }
         }
     }
-
-    private fun currentLimit(): Long = logLimit
 
     override fun close() {
         scope.cancel()

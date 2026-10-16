@@ -19,7 +19,8 @@ class DefaultLogFileReader : LogFileReader {
         val file: Path = Path.of(path)
         if (!Files.isRegularFile(file)) return LogSlice(text = "", truncated = false)
         if (Files.size(file) <= limitBytes) {
-            return LogSlice(text = Files.readString(file, StandardCharsets.UTF_8), truncated = false)
+            val bytes: ByteArray = Files.readAllBytes(file)
+            return LogSlice(text = String(bytes, StandardCharsets.UTF_8), truncated = false)
         }
         val limit: Int = limitBytes.coerceIn(1L, Int.MAX_VALUE.toLong()).toInt()
         return Files.newInputStream(file).use { input ->

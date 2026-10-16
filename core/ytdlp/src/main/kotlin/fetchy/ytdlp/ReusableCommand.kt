@@ -11,8 +11,10 @@ fun maskedReusableCommand(
     url: String,
     shell: ShellFamily,
 ): String {
-    val argv: List<String> = listOf(YTDLP_COMMAND_NAME) + parseFormatArgs(formatArgsJson) + url
-    return CommandStringCodec.format(CommandStringCodec.mask(argv), shell)
+    val invocation: YtDlpInvocation =
+        YtDlpInvocation(urls = listOf(url), userArgs = parseFormatArgs(formatArgsJson))
+    val argv: List<String> = listOf(YTDLP_COMMAND_NAME) + ArgvBuilder().build(invocation).maskedArgv
+    return CommandStringCodec.format(argv, shell)
 }
 
 internal fun parseFormatArgs(raw: String): List<String> {
