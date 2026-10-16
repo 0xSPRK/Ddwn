@@ -219,7 +219,75 @@ class QueueViewModelTest {
         harness.viewModel.restart("a")
 
         verify(exactly = 1) { harness.scheduler.restart(match { it.id == "a" }) }
+        assertEquals(TaskStatus.QUEUED, repository.get("a")?.status)
         assertEquals(0.0, repository.get("a")?.progress)
+        harness.viewModel.close()
+    }
+
+    @Test
+    fun `retry reverts the row when the scheduler rejects the task`() = runTest {
+        val repository = repository()
+        repository.create(task("a", status = TaskStatus.FAILED, progress = 0.3))
+        val harness = createHarness(repository)
+        every { harness.scheduler.submit(any()) } returns false
+
+        harness.viewModel.retry("a")
+
+        assertEquals(TaskStatus.FAILED, repository.get("a")?.status)
+        assertEquals(0.3, repository.get("a")?.progress)
+        harness.viewModel.close()
+    }
+
+    @Test
+    fun `restart reverts the row when the scheduler rejects the task`() = runTest {
+        val repository = repository()
+        repository.create(task("a", status = TaskStatus.DOWNLOADING, progress = 0.5))
+        val harness = createHarness(repository)
+        every { harness.scheduler.restart(any()) } returns false
+
+        harness.viewModel.restart("a")
+
+        assertEquals(TaskStatus.DOWNLOADING, repository.get("a")?.status)
+        assertEquals(0.5, repository.get("a")?.progress)
+        harness.viewModel.close()
+    }
+
+    @Test
+    fun `retry ignores an unknown task`() = runTest {
+        val harness = createHarness(repository())
+
+        harness.viewModel.retry("missing")
+
+        verify(exactly = 0) { harness.scheduler.submit(any()) }
+        harness.viewModel.close()
+    }
+
+    @Test
+    fun `cancel marks an untracked queued task cancelled`() = runTest {
+        val repository = repository()
+        repository.create(task("a"))
+        val harness = createHarness(repository)
+
+        harness.viewModel.cancel("a")
+
+        assertEquals(TaskStatus.CANCELLED, repository.get("a")?.status)
+        harness.viewModel.close()
+    }
+
+    @Test
+    fun `selection is pruned when a task leaves the queue`() = runTest {
+        val repository = repository()
+        repository.create(task("a"))
+        val harness = createHarness(repository)
+
+        harness.viewModel.selectedIds.test {
+            assertEquals(emptySet<String>(), awaitItem())
+            harness.viewModel.toggleSelection("a")
+            assertEquals(setOf("a"), awaitItem())
+            repository.updateStatus("a", TaskStatus.COMPLETED, 1.0, null, 1L)
+            assertEquals(emptySet<String>(), awaitItem())
+            cancelAndIgnoreRemainingEvents()
+        }
         harness.viewModel.close()
     }
 
@@ -260,6 +328,8 @@ class QueueViewModelTest {
 
         verify(exactly = 1) { harness.scheduler.cancel("a") }
         verify(exactly = 1) { harness.scheduler.cancel("b") }
+        assertEquals(TaskStatus.CANCELLED, repository.get("a")?.status)
+        assertEquals(TaskStatus.CANCELLED, repository.get("b")?.status)
         assertEquals(emptySet<String>(), harness.viewModel.selectedIds.value)
         harness.viewModel.close()
     }

@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="queue_title">Очередь</string>
-    <string name="queue_count">Активных: %1$d</string>
     <string name="queue_empty_title">Нет активных загрузок</string>
     <string name="queue_empty_description">Добавьте ссылку на вкладке «Добавить», чтобы начать загрузку.</string>
     <string name="queue_status_queued">В очереди</string>

@@ -101,17 +101,24 @@ class DownloadScheduler(
 
     fun restart(task: DownloadTask): Boolean {
         if (closed.get()) return false
-        val active: Boolean =
+        var active = false
+        val job: Job? =
             synchronized(lock) {
-                if (task.id in queuedIds || task.id in runningJobs) {
+                if (queuedIds.remove(task.id)) {
+                    cancelledIds.add(task.id)
                     restartRequests[task.id] = task
-                    true
+                    active = true
+                    null
+                } else if (task.id in runningJobs) {
+                    restartRequests[task.id] = task
+                    active = true
+                    runningJobs[task.id]
                 } else {
-                    false
+                    null
                 }
             }
         if (!active) return submit(task)
-        cancel(task.id)
+        job?.cancel()
         return true
     }
 

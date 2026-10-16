@@ -50,6 +50,12 @@ class QueueViewModel(
                 }
             }
         }
+        scope.launch {
+            tasks.collect { list ->
+                val ids: Set<String> = list.mapTo(HashSet(), QueueTaskUiState::id)
+                selected.update { current -> current intersect ids }
+            }
+        }
     }
 
     fun toggleSelection(id: String) {
@@ -62,6 +68,7 @@ class QueueViewModel(
 
     fun cancel(id: String) {
         scheduler.cancel(id)
+        scope.launch { markCancelledIfQueued(id) }
     }
 
     fun retry(id: String) {
@@ -69,7 +76,7 @@ class QueueViewModel(
             val task: DownloadTask = repository.get(id) ?: return@launch
             if (task.status != TaskStatus.FAILED && task.status != TaskStatus.CANCELLED) return@launch
             repository.updateStatus(id, TaskStatus.QUEUED, 0.0, null, null)
-            scheduler.submit(task)
+            if (!scheduler.submit(task)) restore(task)
         }
     }
 
@@ -77,7 +84,7 @@ class QueueViewModel(
         scope.launch {
             val task: DownloadTask = repository.get(id) ?: return@launch
             repository.updateStatus(id, TaskStatus.QUEUED, 0.0, null, null)
-            scheduler.restart(task)
+            if (!scheduler.restart(task.copy(progress = 0.0))) restore(task)
         }
     }
 
@@ -85,6 +92,18 @@ class QueueViewModel(
         val ids: Set<String> = selected.value
         ids.forEach { id -> scheduler.cancel(id) }
         clearSelection()
+        scope.launch { ids.forEach { id -> markCancelledIfQueued(id) } }
+    }
+
+    private suspend fun markCancelledIfQueued(id: String) {
+        val task: DownloadTask = repository.get(id) ?: return
+        if (task.status == TaskStatus.QUEUED) {
+            repository.updateStatus(id, TaskStatus.CANCELLED, task.progress, null, null)
+        }
+    }
+
+    private suspend fun restore(task: DownloadTask) {
+        repository.updateStatus(task.id, task.status, task.progress, task.errorClass, task.finishedAt)
     }
 
     override fun close() {

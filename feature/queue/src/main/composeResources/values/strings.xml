@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="queue_title">Queue</string>
-    <string name="queue_count">%1$d active</string>
     <string name="queue_empty_title">No active downloads</string>
     <string name="queue_empty_description">Add a link on the Add tab to start a download.</string>
     <string name="queue_status_queued">Queued</string>
